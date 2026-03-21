@@ -1,6 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import { OrdersLineChart, StatusPieChart } from "./Charts";
 
+export const dynamic = "force-dynamic";
+
 type RecentOrder = {
   id: string;
   phone: string | null;

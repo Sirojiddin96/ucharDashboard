@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 const PAGE_SIZE = 50;
 
 type OrderRow = {

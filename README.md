@@ -7,6 +7,7 @@ A server-side rendered admin dashboard for the **UcharTaxiBot** Telegram taxi bo
 - **Overview** — Key stats (total orders, completed, cancelled, reassigned, unique drivers, registered users) with a 30-day orders trend line chart and an order-status pie chart. Recent orders table with live data.
 - **Orders** — Paginated, filterable table of all orders with status badges, driver info, phone numbers, and amounts.
 - **Users** — Browse registered bot users (`bot_users` table).
+- **Feedback** — Ride feedback from passengers (`ride_feedbacks` table): star ratings (1–5), driver info, comments, average rating, and filter by rating.
 - **Events** — View system/bot events log.
 - **Authentication** — Username/password login protected by an `iron-session` cookie (8-hour session). All dashboard routes are server-side guarded.
 
@@ -31,6 +32,7 @@ app/
     Sidebar.tsx       # Navigation sidebar
     orders/page.tsx   # Orders table
     users/page.tsx    # Users table
+    feedback/page.tsx # Ride feedback table
     events/page.tsx   # Events log
   api/auth/
     login/route.ts    # POST /api/auth/login
