@@ -6,8 +6,12 @@ import type { SessionData } from "@/lib/session";
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow login page and API through
-  if (pathname.startsWith("/login") || pathname.startsWith("/api/auth")) {
+  // Allow login page, privacy policy, and API through
+  if (
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/privacy-policy")
+  ) {
     return NextResponse.next();
   }
 
