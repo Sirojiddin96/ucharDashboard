@@ -6,11 +6,13 @@ import type { SessionData } from "@/lib/session";
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow login page, privacy policy, and API through
+  // Allow login page, privacy policy, delete-account, and API through
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/privacy-policy")
+    pathname.startsWith("/privacy-policy") ||
+    pathname.startsWith("/delete-account") ||
+    pathname.startsWith("/api/delete-account-request")
   ) {
     return NextResponse.next();
   }
