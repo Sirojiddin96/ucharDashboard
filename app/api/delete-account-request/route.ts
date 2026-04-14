@@ -28,7 +28,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Reason is required" }, { status: 400 });
   }
 
-  const { error } = await supabase.from("deletion_requests").insert({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from("deletion_requests").insert({
     name: name.trim(),
     phone: phone.trim(),
     reason: reason.trim(),

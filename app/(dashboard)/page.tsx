@@ -1,12 +1,13 @@
 import { supabase } from "@/lib/supabase";
 import { OrdersLineChart, StatusPieChart } from "./Charts";
+import { getStatus } from "@/lib/order-status";
 
 export const dynamic = "force-dynamic";
 
 type RecentOrder = {
   id: string;
   phone: string | null;
-  final_status: string | null;
+  final_status: number | null;
   amount: number | null;
   created_at: string;
   driver_name: string | null;
@@ -27,12 +28,12 @@ async function getStats() {
     supabase
       .from("orders")
       .select("*", { count: "exact", head: true })
-      .eq("final_status", "completed"),
+      .eq("final_status", 100),
     supabase
       .from("orders")
       .select("*", { count: "exact", head: true })
-      .eq("final_status", "cancelled"),
-    supabase.from("bot_users").select("*", { count: "exact", head: true }),
+      .in("final_status", [8, 9]),
+    supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "passenger"),
     supabase
       .from("orders")
       .select("*", { count: "exact", head: true })
@@ -55,7 +56,7 @@ async function getStats() {
       .not("driver_id", "is", null),
   ]);
 
-  const uniqueDrivers = new Set((driverRows ?? []).map((r: { driver_id: string }) => r.driver_id)).size;
+  const uniqueDrivers = new Set((driverRows ?? []).map((r) => r.driver_id).filter(Boolean)).size;
 
   // Build orders-per-day map
   const dayMap: Record<string, number> = {};
@@ -79,7 +80,7 @@ async function getStats() {
   // Build status breakdown
   const statusMap: Record<string, number> = {};
   for (const o of rawOrders ?? []) {
-    const s = o.final_status ?? "in_progress";
+    const s = o.final_status != null ? getStatus(o.final_status).label : "In Progress";
     statusMap[s] = (statusMap[s] ?? 0) + 1;
   }
   const statusBreakdown = Object.entries(statusMap).map(([status, count]) => ({
@@ -120,16 +121,11 @@ function StatCard({
   );
 }
 
-function statusBadge(status: string | null) {
-  const map: Record<string, string> = {
-    completed: "bg-green-900 text-green-300",
-    cancelled: "bg-red-900 text-red-300",
-    timeout: "bg-yellow-900 text-yellow-300",
-  };
-  const cls = map[status ?? ""] ?? "bg-gray-800 text-gray-400";
+function statusBadge(status: number | null) {
+  const { label, color } = getStatus(status);
   return (
-    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cls}`}>
-      {status ?? "—"}
+    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${color}`}>
+      {status != null ? label : "—"}
     </span>
   );
 }
@@ -240,7 +236,7 @@ export default async function OverviewPage() {
                     {o.driver_name ?? "—"}
                   </td>
                   <td className="py-2 pr-4 text-gray-300">
-                    {o.amount ? `${o.amount} so'm` : "—"}
+                    {o.amount ? `${Number(o.amount).toLocaleString()} so’m` : "—"}
                   </td>
                   <td className="py-2 pr-4">{statusBadge(o.final_status)}</td>
                   <td className="py-2 text-gray-500 text-xs">

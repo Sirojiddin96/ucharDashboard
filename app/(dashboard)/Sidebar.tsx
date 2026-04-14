@@ -6,9 +6,14 @@ import { usePathname, useRouter } from "next/navigation";
 const navItems = [
   { href: "/", label: "Overview", icon: "📊" },
   { href: "/orders", label: "Orders", icon: "🚖" },
+  { href: "/dispatch", label: "Dispatch", icon: "📞" },
+  { href: "/drivers", label: "Driver Map", icon: "🗺️" },
+  { href: "/analytics", label: "Analytics", icon: "📈" },
   { href: "/users", label: "Users", icon: "👥" },
+  { href: "/driver-applications", label: "Drivers", icon: "🚗" },
   { href: "/feedback", label: "Feedback", icon: "⭐" },
   { href: "/events", label: "Events", icon: "📋" },
+  { href: "/settings/regions", label: "Settings", icon: "⚙️" },
 ];
 
 export default function Sidebar() {
@@ -27,7 +32,7 @@ export default function Sidebar() {
         <div className="flex items-center gap-2">
           <span className="text-2xl">🚖</span>
           <div>
-            <p className="font-bold text-white leading-tight">UcharTaxiBot</p>
+            <p className="font-bold text-white leading-tight">UcharTaxi Admin</p>
             <p className="text-xs text-gray-500">Admin</p>
           </div>
         </div>

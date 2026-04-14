@@ -5,11 +5,14 @@ export const dynamic = "force-dynamic";
 const PAGE_SIZE = 50;
 
 type UserRow = {
-  telegram_id: number;
+  id: string;
+  telegram_id: number | null;
   username: string | null;
   first_name: string | null;
   last_name: string | null;
   phone: string | null;
+  role: string;
+  total_rides: number;
   created_at: string;
 };
 
@@ -18,28 +21,14 @@ async function getUsers(page: number) {
   const to = from + PAGE_SIZE - 1;
 
   const { data, count } = await supabase
-    .from("bot_users")
-    .select("telegram_id, username, first_name, last_name, phone, created_at", {
+    .from("users")
+    .select("id, telegram_id, username, first_name, last_name, phone, role, total_rides, created_at", {
       count: "exact",
     })
     .order("created_at", { ascending: false })
     .range(from, to);
 
-  // Fetch order counts per user in one query
-  const ids = (data ?? []).map((u: UserRow) => u.telegram_id);
-  const { data: orderCounts } = ids.length
-    ? await supabase
-        .from("orders")
-        .select("telegram_user_id")
-        .in("telegram_user_id", ids)
-    : { data: [] };
-
-  const countMap: Record<string, number> = {};
-  for (const o of orderCounts ?? []) {
-    countMap[o.telegram_user_id] = (countMap[o.telegram_user_id] ?? 0) + 1;
-  }
-
-  return { users: data ?? [], total: count ?? 0, countMap };
+  return { users: (data ?? []) as UserRow[], total: count ?? 0 };
 }
 
 export default async function UsersPage({
@@ -49,7 +38,7 @@ export default async function UsersPage({
 }) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page ?? "1", 10));
-  const { users, total, countMap } = await getUsers(page);
+  const { users, total } = await getUsers(page);
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   function pageUrl(p: number) {
@@ -71,19 +60,19 @@ export default async function UsersPage({
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Username</th>
                 <th className="px-4 py-3 font-medium">Phone</th>
-                <th className="px-4 py-3 font-medium">Orders</th>
+                <th className="px-4 py-3 font-medium">Role</th>
+                <th className="px-4 py-3 font-medium">Rides</th>
                 <th className="px-4 py-3 font-medium">Joined</th>
               </tr>
             </thead>
             <tbody>
-              {users.map((u: UserRow) => (
+              {users.map((u) => (
                 <tr
-                  key={u.telegram_id}
+                  key={u.id}
                   className="border-b border-gray-800/50 hover:bg-gray-800/30"
                 >
                   <td className="px-4 py-3 text-gray-200">
-                    {[u.first_name, u.last_name].filter(Boolean).join(" ") ||
-                      "—"}
+                    {[u.first_name, u.last_name].filter(Boolean).join(" ") || "—"}
                   </td>
                   <td className="px-4 py-3 text-indigo-400">
                     {u.username ? `@${u.username}` : "—"}
@@ -91,8 +80,15 @@ export default async function UsersPage({
                   <td className="px-4 py-3 text-gray-300">
                     {u.phone ?? "—"}
                   </td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${
+                      u.role === "driver" ? "bg-violet-900 text-violet-300" : "bg-gray-800 text-gray-400"
+                    }`}>
+                      {u.role}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-gray-300">
-                    {countMap[u.telegram_id] ?? 0}
+                    {u.total_rides}
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
                     {new Date(u.created_at).toLocaleDateString("ru-RU", {
@@ -106,7 +102,7 @@ export default async function UsersPage({
               {users.length === 0 && (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-12 text-center text-gray-500"
                   >
                     No users yet

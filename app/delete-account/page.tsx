@@ -412,6 +412,7 @@ export default function DeleteAccountPage() {
                       : "Причина удаления"}
                   </label>
                   <select
+                  
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     required

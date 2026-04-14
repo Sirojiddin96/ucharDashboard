@@ -1,3 +1,4 @@
+import type { Enums } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -6,11 +7,12 @@ const PAGE_SIZE = 75;
 
 type EventRow = {
   id: number;
-  telegram_user_id: number;
+  telegram_user_id: number | null;
   event_type: string;
   order_id: string | null;
   scat_uuid: string | null;
-  metadata: Record<string, unknown> | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  metadata: any;
   created_at: string;
 };
 
@@ -65,7 +67,7 @@ async function getEvents(page: number, eventType: string) {
     .order("created_at", { ascending: false })
     .range(from, to);
 
-  if (eventType) query = query.eq("event_type", eventType);
+  if (eventType) query = query.eq("event_type", eventType as Enums<"bot_event_type">);
 
   const { data, count } = await query;
   return { events: data ?? [], total: count ?? 0 };

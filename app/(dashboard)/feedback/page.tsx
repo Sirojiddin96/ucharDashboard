@@ -6,8 +6,8 @@ const PAGE_SIZE = 50;
 
 type FeedbackRow = {
   id: number;
-  order_id: string;
-  telegram_user_id: number;
+  order_id: string | null;
+  telegram_user_id: number | null;
   driver_id: string | null;
   driver_name: string | null;
   car_number: string | null;

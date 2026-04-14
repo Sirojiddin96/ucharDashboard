@@ -1,26 +1,64 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+code, kbd, samp, pre, .font-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+.input-dark {
+  background: #1f2937;
+  border: 1px solid #374151;
+  color: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.625rem;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.input-dark:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.input-dark option {
+  background: #1f2937;
+}
+
+.region-input {
+  height: 38px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  color: #f9fafb;
+  border-radius: 0.625rem;
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.region-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.region-input::placeholder {
+  color: #4b5563;
+}
+
+.region-input option {
+  background: #111827;
+}
+
+.bg-gray-750 {
+  background-color: #1f2937;
+}
+
+.map-picker-container {
+  position: relative;
+  height: 260px;
 }
