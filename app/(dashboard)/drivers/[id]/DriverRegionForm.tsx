@@ -4,13 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const SERVICE_CLASSES = [
-  "economy",
-  "standard",
-  "comfort",
-  "business",
-  "minivan",
-  "cargo",
-  "intercity",
+  "economy", 
+  "standard", 
+  "comfort", 
+  "business", 
+  "minivan", 
+  "intercity", 
+  "delivery",
+  "loads"
 ] as const;
 
 interface Region {

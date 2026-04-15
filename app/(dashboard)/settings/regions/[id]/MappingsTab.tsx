@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ServiceType } from "../../service-types/ServiceTypeList";
 import type { Tariff } from "../../tariffs/TariffList";
+import PricingModal, { type PricingRst, type TariffTier } from "./PricingModal";
 
 type Mapping = {
   id: string;
@@ -12,8 +13,12 @@ type Mapping = {
   scat_rate_id: number | null;
   is_active: boolean;
   sort_order: number;
+  display_fare: number;
+  start_fare: number;
+  minimum_fare: number;
   service_types: Pick<ServiceType, "id" | "name" | "name_uz" | "service_class" | "max_passengers" | "is_active"> | null;
   tariffs: Pick<Tariff, "id" | "name" | "per_km" | "base_fare" | "currency"> | null;
+  tariff_tiers: TariffTier[];
 };
 
 const NONE = "none";
@@ -30,6 +35,22 @@ export default function MappingsTab({
   allTariffs: Tariff[];
 }) {
   const [mappings, setMappings] = useState<Mapping[]>(initialMappings);
+
+  // ── Pricing modal ───────────────────────────────────────────
+  const [pricingRst, setPricingRst] = useState<PricingRst | null>(null);
+
+  function openPricing(m: Mapping) {
+    setPricingRst({
+      id: m.id,
+      display_fare: m.display_fare ?? 0,
+      start_fare: m.start_fare ?? 0,
+      minimum_fare: m.minimum_fare ?? 0,
+      tariff_tiers: m.tariff_tiers ?? [],
+      service_types: m.service_types
+        ? { name: m.service_types.name, name_uz: m.service_types.name_uz, service_class: m.service_types.service_class }
+        : null,
+    });
+  }
 
   // ── Add mapping modal ───────────────────────────────────────
   const [showAdd, setShowAdd] = useState(false);
@@ -137,8 +158,19 @@ export default function MappingsTab({
     setDeleting(null);
   }
 
+  const fmt = (n: number) => n?.toLocaleString("uz-UZ") ?? "0";
+
   return (
     <div>
+      {/* Pricing Modal */}
+      {pricingRst && (
+        <PricingModal
+          rst={pricingRst}
+          onClose={() => setPricingRst(null)}
+          onSaved={async () => { await refresh(); setPricingRst(null); }}
+        />
+      )}
+
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-400">
           Assign service types and their tariffs to this region. Adding a service type here makes it available for dispatch in this region.
@@ -281,19 +313,20 @@ export default function MappingsTab({
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-800 text-gray-400 text-xs uppercase">
             <tr>
-              <th className="px-4 py-3">Service Type</th>
-              <th className="px-4 py-3">Class</th>
-              <th className="px-4 py-3">Tariff</th>
-              <th className="px-4 py-3">SCAT Rate</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Actions</th>
+              <th className="px-4 py-3">Xizmat turi</th>
+              <th className="px-4 py-3">Klass</th>
+              <th className="px-4 py-3">Ko'rsatish</th>
+              <th className="px-4 py-3">Boshlash</th>
+              <th className="px-4 py-3">Bosqichlar</th>
+              <th className="px-4 py-3">Holat</th>
+              <th className="px-4 py-3">Amallar</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-700">
             {mappings.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center text-gray-500 py-10">
-                  No services mapped to this region yet.
+                <td colSpan={7} className="text-center text-gray-500 py-10">
+                  Bu regionga hali xizmat qo'shilmagan.
                 </td>
               </tr>
             )}
@@ -310,33 +343,36 @@ export default function MappingsTab({
                     {m.service_types?.service_class ?? "—"}
                   </span>
                 </td>
+                <td className="px-4 py-3 text-gray-300 font-mono text-xs">
+                  {fmt(m.display_fare ?? 0)}
+                </td>
+                <td className="px-4 py-3 text-gray-300 font-mono text-xs">
+                  {fmt(m.start_fare ?? 0)}
+                </td>
                 <td className="px-4 py-3">
-                  {m.tariffs ? (
-                    <span className="text-gray-300">
-                      {m.tariffs.name || "Unnamed"}
-                      <span className="ml-1 text-xs text-gray-500">({m.tariffs.per_km}/km)</span>
+                  {(m.tariff_tiers?.length ?? 0) > 0 ? (
+                    <span className="px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-300 text-xs">
+                      {m.tariff_tiers.length} bosqich
                     </span>
                   ) : (
-                    <span className="text-yellow-600 text-xs italic">No tariff</span>
+                    <span className="text-gray-600 text-xs italic">—</span>
                   )}
-                </td>
-                <td className="px-4 py-3 text-gray-400 font-mono text-xs">
-                  {m.scat_rate_id ?? <span className="text-gray-600">—</span>}
                 </td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-0.5 rounded-full text-xs ${m.is_active ? "bg-green-900 text-green-300" : "bg-red-900 text-red-300"}`}>
-                    {m.is_active ? "Active" : "Inactive"}
+                    {m.is_active ? "Faol" : "Nofaol"}
                   </span>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
-                    <button onClick={() => openEdit(m)} className="text-xs text-indigo-400 hover:text-indigo-300">Edit</button>
+                    <button onClick={() => openPricing(m)} className="text-xs text-emerald-400 hover:text-emerald-300">Narxlar</button>
+                    <button onClick={() => openEdit(m)} className="text-xs text-indigo-400 hover:text-indigo-300">Sozlash</button>
                     <button
                       onClick={() => del(m.id)}
                       disabled={deleting === m.id}
                       className="text-xs text-red-400 hover:text-red-300 disabled:opacity-40"
                     >
-                      {deleting === m.id ? "…" : "Remove"}
+                      {deleting === m.id ? "…" : "O'chirish"}
                     </button>
                   </div>
                 </td>

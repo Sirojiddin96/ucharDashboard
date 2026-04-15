@@ -3,6 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const MapPicker = dynamic(
+  () => import("./[id]/MapPicker"),
+  { ssr: false, loading: () => <div className="h-70 bg-gray-800 rounded-xl animate-pulse" /> }
+);
 
 type Region = {
   id: string;
@@ -94,7 +100,7 @@ export default function RegionList({ initialRegions }: { initialRegions: Region[
 
       {showForm && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-900 border border-gray-700/60 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden">
+          <div className="bg-gray-900 border border-gray-700/60 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden">
 
             {/* Header */}
             <div className="px-6 pt-6 pb-5 border-b border-gray-800">
@@ -105,7 +111,7 @@ export default function RegionList({ initialRegions }: { initialRegions: Region[
             </div>
 
             {/* Body */}
-            <div className="px-6 py-5 space-y-5">
+            <div className="px-6 py-5 space-y-5 overflow-y-auto max-h-[70vh]">
               {error && <p className="text-red-400 text-xs bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">{error}</p>}
 
               {/* Name */}
@@ -222,6 +228,21 @@ export default function RegionList({ initialRegions }: { initialRegions: Region[
                     placeholder="0"
                     value={form.sort_order ?? 0}
                     onChange={(e) => setForm({ ...form, sort_order: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+
+              {/* Map picker */}
+              <div>
+                <label className="block text-[11px] font-medium text-gray-400 mb-1.5">
+                  Region Center
+                  <span className="ml-2 text-gray-600 normal-case font-normal">click on the map to set lat/lon</span>
+                </label>
+                <div className="h-70 rounded-xl overflow-hidden border border-gray-700/50 relative">
+                  <MapPicker
+                    lat={form.center_lat || 0}
+                    lon={form.center_lon || 0}
+                    onChange={(lat, lon) => setForm((f) => ({ ...f, center_lat: lat, center_lon: lon }))}
                   />
                 </div>
               </div>

@@ -38,7 +38,7 @@ export default async function RegionDetailPage({
   // Mappings tab data
   const { data: mappingsRaw } = await supabase
     .from("region_service_tariffs")
-    .select("*, service_types(id, name, name_uz, service_class, max_passengers, is_active), tariffs(id, name, per_km, base_fare, currency)")
+    .select("*, service_types(id, name, name_uz, service_class, max_passengers, is_active), tariffs(id, name, per_km, base_fare, currency), tariff_tiers(id, rst_id, from_km, to_km, pricing_type, rate, sort_order)")
     .eq("region_id", id)
     .order("sort_order", { ascending: true });
   const mappings = (mappingsRaw ?? []) as any[];

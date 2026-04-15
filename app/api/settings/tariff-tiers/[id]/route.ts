@@ -14,13 +14,17 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json();
 
-  const allowed = ["tariff_id", "scat_rate_id", "is_active", "sort_order", "display_fare", "start_fare", "minimum_fare"];
+  const allowed = ["from_km", "to_km", "pricing_type", "rate", "sort_order"];
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in body) updates[key] = body[key];
   }
 
-  const { error } = await supabase.from("region_service_tariffs").update(updates).eq("id", id);
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+  }
+
+  const { error } = await supabase.from("tariff_tiers").update(updates).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
@@ -33,7 +37,7 @@ export async function DELETE(
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const { error } = await supabase.from("region_service_tariffs").delete().eq("id", id);
+  const { error } = await supabase.from("tariff_tiers").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

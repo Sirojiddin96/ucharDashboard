@@ -13,42 +13,13 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 
+CREATE SCHEMA IF NOT EXISTS "public";
+
+
+ALTER SCHEMA "public" OWNER TO "pg_database_owner";
+
+
 COMMENT ON SCHEMA "public" IS 'standard public schema';
-
-
-
-CREATE EXTENSION IF NOT EXISTS "pg_graphql" WITH SCHEMA "graphql";
-
-
-
-
-
-
-CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
-
-
-
-
-
-
-CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
-
-
-
-
-
-
-CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";
-
-
-
-
-
-
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
-
-
-
 
 
 
@@ -125,13 +96,14 @@ $$;
 ALTER FUNCTION "public"."calculate_fare"("p_rate_id" integer, "p_distance_m" double precision, "p_duration_s" integer) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."find_nearest_online_driver"("p_lat" double precision, "p_lon" double precision, "p_radius_m" double precision DEFAULT 5000, "p_exclude_ids" "uuid"[] DEFAULT '{}'::"uuid"[], "p_region_id" "uuid" DEFAULT NULL) RETURNS TABLE("driver_id" "uuid", "distance_m" double precision)
+CREATE OR REPLACE FUNCTION "public"."find_nearest_online_driver"("p_lat" double precision, "p_lon" double precision, "p_radius_m" double precision DEFAULT 5000, "p_exclude_ids" "uuid"[] DEFAULT '{}'::"uuid"[]) RETURNS TABLE("driver_id" "uuid", "distance_m" double precision)
     LANGUAGE "sql" STABLE
     AS $$
   SELECT driver_id, distance_m
   FROM (
     SELECT
       dos.driver_id,
+      -- Haversine distance in metres
       6371000.0 * acos(
         LEAST(1.0,
           sin(radians(p_lat))  * sin(radians(dos.lat))  +
@@ -140,11 +112,46 @@ CREATE OR REPLACE FUNCTION "public"."find_nearest_online_driver"("p_lat" double 
         )
       ) AS distance_m
     FROM public.driver_online_status dos
-    JOIN public.users u ON u.id = dos.driver_id
     WHERE
       dos.is_online  = true
       AND dos.lat   IS NOT NULL
       AND dos.lon   IS NOT NULL
+      AND dos.driver_id != ALL(COALESCE(p_exclude_ids, '{}'))
+      -- pre-filter with a bounding box to avoid full-table Haversine scan
+      AND dos.lat BETWEEN p_lat - (p_radius_m / 111320.0)
+                      AND p_lat + (p_radius_m / 111320.0)
+      AND dos.lon BETWEEN p_lon - (p_radius_m / (111320.0 * cos(radians(p_lat))))
+                      AND p_lon + (p_radius_m / (111320.0 * cos(radians(p_lat))))
+  ) sub
+  WHERE sub.distance_m <= p_radius_m
+  ORDER BY sub.distance_m
+  LIMIT 1;
+$$;
+
+
+ALTER FUNCTION "public"."find_nearest_online_driver"("p_lat" double precision, "p_lon" double precision, "p_radius_m" double precision, "p_exclude_ids" "uuid"[]) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."find_nearest_online_driver"("p_lat" double precision, "p_lon" double precision, "p_radius_m" double precision DEFAULT 5000, "p_exclude_ids" "uuid"[] DEFAULT '{}'::"uuid"[], "p_region_id" "uuid" DEFAULT NULL::"uuid") RETURNS TABLE("driver_id" "uuid", "distance_m" double precision)
+    LANGUAGE "sql" STABLE
+    AS $$
+  SELECT driver_id, distance_m
+  FROM (
+    SELECT
+      dos.driver_id,
+      6371000.0 * acos(
+        LEAST(1.0,
+          sin(radians(p_lat)) * sin(radians(dos.lat)) +
+          cos(radians(p_lat)) * cos(radians(dos.lat)) *
+          cos(radians(dos.lon) - radians(p_lon))
+        )
+      ) AS distance_m
+    FROM public.driver_online_status dos
+    JOIN public.users u ON u.id = dos.driver_id
+    WHERE
+      dos.is_online = true
+      AND dos.lat IS NOT NULL
+      AND dos.lon IS NOT NULL
       AND dos.driver_id != ALL(COALESCE(p_exclude_ids, '{}'))
       AND (p_region_id IS NULL OR u.region_id = p_region_id)
       AND dos.lat BETWEEN p_lat - (p_radius_m / 111320.0)
@@ -158,7 +165,75 @@ CREATE OR REPLACE FUNCTION "public"."find_nearest_online_driver"("p_lat" double 
 $$;
 
 
-ALTER FUNCTION "public"."find_nearest_online_driver"("p_lat" double precision, "p_lon" double precision, "p_radius_m" double precision, "p_exclude_ids" "uuid"[]) OWNER TO "postgres";
+ALTER FUNCTION "public"."find_nearest_online_driver"("p_lat" double precision, "p_lon" double precision, "p_radius_m" double precision, "p_exclude_ids" "uuid"[], "p_region_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."fn_auto_create_driver_offer"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_attempt_number integer;
+  v_offered_at     timestamptz := now();
+  v_expires_at     timestamptz := now() + interval '30 seconds';
+BEGIN
+  -- Only act when driver_id is being set (or changed) to a non-null value.
+  IF NEW.driver_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  -- If driver_id hasn't changed, do nothing.
+  IF OLD.driver_id IS NOT DISTINCT FROM NEW.driver_id THEN
+    RETURN NEW;
+  END IF;
+
+  -- Determine attempt number (count prior offers for this order).
+  SELECT COALESCE(COUNT(*), 0) + 1
+  INTO   v_attempt_number
+  FROM   public.driver_offers
+  WHERE  order_id = NEW.id;
+
+  -- Cancel any still-pending offer for the previous driver (reassignment case).
+  IF OLD.driver_id IS NOT NULL THEN
+    UPDATE public.driver_offers
+    SET    status       = 'cancelled',
+           responded_at = now()
+    WHERE  order_id  = NEW.id
+      AND  driver_id = OLD.driver_id
+      AND  status    = 'pending';
+  END IF;
+
+  -- Insert a fresh offer for the newly assigned driver.
+  INSERT INTO public.driver_offers (
+    order_id,
+    driver_id,
+    pickup_lat,
+    pickup_lon,
+    pickup_address,
+    distance_m,
+    status,
+    offered_at,
+    expires_at,
+    attempt_number
+  ) VALUES (
+    NEW.id,
+    NEW.driver_id,
+    NEW.latitude,
+    NEW.longitude,
+    NEW.address,
+    NEW.distance_m,
+    'pending',
+    v_offered_at,
+    v_expires_at,
+    v_attempt_number
+  );
+
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."fn_auto_create_driver_offer"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."handle_new_auth_user"() RETURNS "trigger"
@@ -862,6 +937,22 @@ CREATE TABLE IF NOT EXISTS "public"."otp_codes" (
 ALTER TABLE "public"."otp_codes" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."region_service_tariffs" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "region_id" "uuid" NOT NULL,
+    "service_type_id" "uuid" NOT NULL,
+    "tariff_id" "uuid",
+    "scat_rate_id" integer,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."region_service_tariffs" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."regions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "name" "text" NOT NULL,
@@ -928,6 +1019,31 @@ CREATE TABLE IF NOT EXISTS "public"."scat_rates" (
 ALTER TABLE "public"."scat_rates" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."service_types" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "name" "text" NOT NULL,
+    "name_uz" "text",
+    "name_ru" "text",
+    "service_class" "text" NOT NULL,
+    "description" "text",
+    "description_uz" "text",
+    "description_ru" "text",
+    "icon_key" "text",
+    "icon_url" "text",
+    "max_passengers" integer DEFAULT 4 NOT NULL,
+    "features" "text"[],
+    "estimated_pickup_minutes" integer,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "service_types_service_class_check" CHECK (("service_class" = ANY (ARRAY['economy'::"text", 'standard'::"text", 'comfort'::"text", 'business'::"text", 'minivan'::"text", 'cargo'::"text", 'intercity'::"text"])))
+);
+
+
+ALTER TABLE "public"."service_types" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."services" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "region_id" "uuid" NOT NULL,
@@ -956,9 +1072,6 @@ ALTER TABLE "public"."services" OWNER TO "postgres";
 
 CREATE TABLE IF NOT EXISTS "public"."tariffs" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "region_id" "uuid" NOT NULL,
-    "service_id" "uuid" NOT NULL,
-    "fare_policy_id" "text",
     "name" "text",
     "currency" "text" DEFAULT 'UZS'::"text" NOT NULL,
     "base_fare" numeric DEFAULT 0 NOT NULL,
@@ -977,6 +1090,8 @@ CREATE TABLE IF NOT EXISTS "public"."tariffs" (
     "is_active" boolean DEFAULT true NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "region_id" "uuid",
+    "service_id" "uuid",
     CONSTRAINT "tariffs_surge_preset_check" CHECK (("surge_preset" = ANY (ARRAY['none'::"text", 'low'::"text", 'medium'::"text", 'high'::"text", 'custom'::"text"])))
 );
 
@@ -1003,7 +1118,10 @@ CREATE TABLE IF NOT EXISTS "public"."users" (
     "fcm_token" "text",
     "is_deleted" boolean DEFAULT false NOT NULL,
     "role" "text" DEFAULT 'courier'::"text" NOT NULL,
+    "region_id" "uuid",
+    "service_class" "text",
     CONSTRAINT "users_role_check" CHECK (("role" = ANY (ARRAY['driver'::"text", 'courier'::"text", 'admin'::"text"]))),
+    CONSTRAINT "users_service_class_check" CHECK (("service_class" = ANY (ARRAY['economy'::"text", 'standard'::"text", 'comfort'::"text", 'business'::"text", 'minivan'::"text", 'cargo'::"text", 'intercity'::"text"]))),
     CONSTRAINT "users_source_check" CHECK (("source" = ANY (ARRAY['bot'::"text", 'app'::"text", 'both'::"text"])))
 );
 
@@ -1153,6 +1271,16 @@ ALTER TABLE ONLY "public"."otp_codes"
 
 
 
+ALTER TABLE ONLY "public"."region_service_tariffs"
+    ADD CONSTRAINT "region_service_tariffs_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."region_service_tariffs"
+    ADD CONSTRAINT "region_service_tariffs_unique" UNIQUE ("region_id", "service_type_id");
+
+
+
 ALTER TABLE ONLY "public"."regions"
     ADD CONSTRAINT "regions_pkey" PRIMARY KEY ("id");
 
@@ -1170,6 +1298,11 @@ ALTER TABLE ONLY "public"."ride_feedbacks"
 
 ALTER TABLE ONLY "public"."scat_rates"
     ADD CONSTRAINT "scat_rates_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."service_types"
+    ADD CONSTRAINT "service_types_pkey" PRIMARY KEY ("id");
 
 
 
@@ -1312,6 +1445,10 @@ CREATE INDEX "idx_users_phone" ON "public"."users" USING "btree" ("phone");
 
 
 
+CREATE INDEX "idx_users_region_id" ON "public"."users" USING "btree" ("region_id");
+
+
+
 CREATE INDEX "idx_users_telegram_id" ON "public"."users" USING "btree" ("telegram_id");
 
 
@@ -1368,6 +1505,14 @@ CREATE INDEX "wallet_tx_user_idx" ON "public"."wallet_transactions" USING "btree
 
 
 
+CREATE OR REPLACE TRIGGER "rst_set_updated_at" BEFORE UPDATE ON "public"."region_service_tariffs" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "service_types_set_updated_at" BEFORE UPDATE ON "public"."service_types" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
 CREATE OR REPLACE TRIGGER "set_default_addresses_updated_at" BEFORE UPDATE ON "public"."default_addresses" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
 
 
@@ -1389,6 +1534,10 @@ CREATE OR REPLACE TRIGGER "set_updated_at_orders" BEFORE UPDATE ON "public"."ord
 
 
 CREATE OR REPLACE TRIGGER "set_updated_at_users" BEFORE UPDATE ON "public"."users" FOR EACH ROW EXECUTE FUNCTION "public"."trigger_set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_auto_create_driver_offer" AFTER UPDATE OF "driver_id" ON "public"."orders" FOR EACH ROW EXECUTE FUNCTION "public"."fn_auto_create_driver_offer"();
 
 
 
@@ -1491,6 +1640,26 @@ ALTER TABLE ONLY "public"."ride_feedbacks"
 
 
 
+ALTER TABLE ONLY "public"."region_service_tariffs"
+    ADD CONSTRAINT "rst_region_fk" FOREIGN KEY ("region_id") REFERENCES "public"."regions"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."region_service_tariffs"
+    ADD CONSTRAINT "rst_scat_rate_fk" FOREIGN KEY ("scat_rate_id") REFERENCES "public"."scat_rates"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."region_service_tariffs"
+    ADD CONSTRAINT "rst_service_type_fk" FOREIGN KEY ("service_type_id") REFERENCES "public"."service_types"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."region_service_tariffs"
+    ADD CONSTRAINT "rst_tariff_fk" FOREIGN KEY ("tariff_id") REFERENCES "public"."tariffs"("id") ON DELETE SET NULL;
+
+
+
 ALTER TABLE ONLY "public"."services"
     ADD CONSTRAINT "services_region_id_fkey" FOREIGN KEY ("region_id") REFERENCES "public"."regions"("id") ON DELETE CASCADE;
 
@@ -1508,6 +1677,11 @@ ALTER TABLE ONLY "public"."tariffs"
 
 ALTER TABLE ONLY "public"."users"
     ADD CONSTRAINT "users_auth_user_id_fkey" FOREIGN KEY ("auth_user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."users"
+    ADD CONSTRAINT "users_region_id_fkey" FOREIGN KEY ("region_id") REFERENCES "public"."regions"("id") ON DELETE SET NULL;
 
 
 
@@ -1566,11 +1740,19 @@ CREATE POLICY "Public read default_addresses" ON "public"."default_addresses" FO
 
 
 
+CREATE POLICY "Public read region_service_tariffs" ON "public"."region_service_tariffs" FOR SELECT USING (true);
+
+
+
 CREATE POLICY "Public read regions" ON "public"."regions" FOR SELECT USING (true);
 
 
 
 CREATE POLICY "Public read scat_rates" ON "public"."scat_rates" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "Public read service_types" ON "public"."service_types" FOR SELECT USING (true);
 
 
 
@@ -1701,6 +1883,9 @@ CREATE POLICY "orders: yangi buyurtma yaratish" ON "public"."orders" FOR INSERT 
 ALTER TABLE "public"."otp_codes" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."region_service_tariffs" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."regions" ENABLE ROW LEVEL SECURITY;
 
 
@@ -1712,6 +1897,9 @@ ALTER TABLE "public"."scat_rates" ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "service role only" ON "public"."otp_codes" USING (false);
 
+
+
+ALTER TABLE "public"."service_types" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."services" ENABLE ROW LEVEL SECURITY;
@@ -1763,173 +1951,10 @@ CREATE POLICY "wallets_self_read" ON "public"."wallets" FOR SELECT USING (("user
 
 
 
-
-
-ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
-
-
-
-
-
-
-ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."orders";
-
-
-
 GRANT USAGE ON SCHEMA "public" TO "postgres";
 GRANT USAGE ON SCHEMA "public" TO "anon";
 GRANT USAGE ON SCHEMA "public" TO "authenticated";
 GRANT USAGE ON SCHEMA "public" TO "service_role";
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1942,6 +1967,18 @@ GRANT ALL ON FUNCTION "public"."calculate_fare"("p_rate_id" integer, "p_distance
 GRANT ALL ON FUNCTION "public"."find_nearest_online_driver"("p_lat" double precision, "p_lon" double precision, "p_radius_m" double precision, "p_exclude_ids" "uuid"[]) TO "anon";
 GRANT ALL ON FUNCTION "public"."find_nearest_online_driver"("p_lat" double precision, "p_lon" double precision, "p_radius_m" double precision, "p_exclude_ids" "uuid"[]) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."find_nearest_online_driver"("p_lat" double precision, "p_lon" double precision, "p_radius_m" double precision, "p_exclude_ids" "uuid"[]) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."find_nearest_online_driver"("p_lat" double precision, "p_lon" double precision, "p_radius_m" double precision, "p_exclude_ids" "uuid"[], "p_region_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."find_nearest_online_driver"("p_lat" double precision, "p_lon" double precision, "p_radius_m" double precision, "p_exclude_ids" "uuid"[], "p_region_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."find_nearest_online_driver"("p_lat" double precision, "p_lon" double precision, "p_radius_m" double precision, "p_exclude_ids" "uuid"[], "p_region_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."fn_auto_create_driver_offer"() TO "anon";
+GRANT ALL ON FUNCTION "public"."fn_auto_create_driver_offer"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."fn_auto_create_driver_offer"() TO "service_role";
 
 
 
@@ -1996,21 +2033,6 @@ GRANT ALL ON FUNCTION "public"."wallet_release"("p_order_id" "uuid") TO "service
 GRANT ALL ON FUNCTION "public"."wallet_reserve"("p_driver_id" "uuid", "p_order_id" "uuid", "p_amount" bigint) TO "anon";
 GRANT ALL ON FUNCTION "public"."wallet_reserve"("p_driver_id" "uuid", "p_order_id" "uuid", "p_amount" bigint) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."wallet_reserve"("p_driver_id" "uuid", "p_order_id" "uuid", "p_amount" bigint) TO "service_role";
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2134,6 +2156,12 @@ GRANT ALL ON TABLE "public"."otp_codes" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."region_service_tariffs" TO "anon";
+GRANT ALL ON TABLE "public"."region_service_tariffs" TO "authenticated";
+GRANT ALL ON TABLE "public"."region_service_tariffs" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."regions" TO "anon";
 GRANT ALL ON TABLE "public"."regions" TO "authenticated";
 GRANT ALL ON TABLE "public"."regions" TO "service_role";
@@ -2149,6 +2177,12 @@ GRANT ALL ON SEQUENCE "public"."ride_feedbacks_id_seq" TO "service_role";
 GRANT ALL ON TABLE "public"."scat_rates" TO "anon";
 GRANT ALL ON TABLE "public"."scat_rates" TO "authenticated";
 GRANT ALL ON TABLE "public"."scat_rates" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."service_types" TO "anon";
+GRANT ALL ON TABLE "public"."service_types" TO "authenticated";
+GRANT ALL ON TABLE "public"."service_types" TO "service_role";
 
 
 
@@ -2182,12 +2216,6 @@ GRANT ALL ON TABLE "public"."wallets" TO "service_role";
 
 
 
-
-
-
-
-
-
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "postgres";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "anon";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "authenticated";
@@ -2212,34 +2240,6 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 
-const SERVICE_CLASSES = ["economy", "standard", "comfort", "business", "minivan", "cargo", "intercity"];
+const SERVICE_CLASSES = [
+  "economy", 
+  "standard", 
+  "comfort", 
+  "business", 
+  "minivan", 
+  "intercity", 
+  "delivery",
+  "loads"
+];
 
 export type ServiceType = {
   id: string;

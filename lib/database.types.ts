@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       app_versions: {
@@ -624,11 +599,13 @@ export type Database = {
           driver_id: string | null
           driver_name: string | null
           driver_reassignment_count: number
+          dropoff_address: string | null
           final_status: number | null
           gps_accuracy: number | null
           id: string
           latitude: number
           longitude: number
+          note: string | null
           phone: string | null
           polling_stopped_at: string | null
           region_id: string | null
@@ -660,11 +637,13 @@ export type Database = {
           driver_id?: string | null
           driver_name?: string | null
           driver_reassignment_count?: number
+          dropoff_address?: string | null
           final_status?: number | null
           gps_accuracy?: number | null
           id?: string
           latitude: number
           longitude: number
+          note?: string | null
           phone?: string | null
           polling_stopped_at?: string | null
           region_id?: string | null
@@ -696,11 +675,13 @@ export type Database = {
           driver_id?: string | null
           driver_name?: string | null
           driver_reassignment_count?: number
+          dropoff_address?: string | null
           final_status?: number | null
           gps_accuracy?: number | null
           id?: string
           latitude?: number
           longitude?: number
+          note?: string | null
           phone?: string | null
           polling_stopped_at?: string | null
           region_id?: string | null
@@ -767,6 +748,80 @@ export type Database = {
           phone?: string
         }
         Relationships: []
+      }
+      region_service_tariffs: {
+        Row: {
+          created_at: string
+          display_fare: number
+          id: string
+          is_active: boolean
+          minimum_fare: number
+          region_id: string
+          scat_rate_id: number | null
+          service_type_id: string
+          sort_order: number
+          start_fare: number
+          tariff_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_fare?: number
+          id?: string
+          is_active?: boolean
+          minimum_fare?: number
+          region_id: string
+          scat_rate_id?: number | null
+          service_type_id: string
+          sort_order?: number
+          start_fare?: number
+          tariff_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_fare?: number
+          id?: string
+          is_active?: boolean
+          minimum_fare?: number
+          region_id?: string
+          scat_rate_id?: number | null
+          service_type_id?: string
+          sort_order?: number
+          start_fare?: number
+          tariff_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rst_region_fk"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rst_scat_rate_fk"
+            columns: ["scat_rate_id"]
+            isOneToOne: false
+            referencedRelation: "scat_rates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rst_service_type_fk"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rst_tariff_fk"
+            columns: ["tariff_id"]
+            isOneToOne: false
+            referencedRelation: "tariffs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       regions: {
         Row: {
@@ -964,6 +1019,66 @@ export type Database = {
         }
         Relationships: []
       }
+      service_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          description_ru: string | null
+          description_uz: string | null
+          estimated_pickup_minutes: number | null
+          features: string[] | null
+          icon_key: string | null
+          icon_url: string | null
+          id: string
+          is_active: boolean
+          max_passengers: number
+          name: string
+          name_ru: string | null
+          name_uz: string | null
+          service_class: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          description_ru?: string | null
+          description_uz?: string | null
+          estimated_pickup_minutes?: number | null
+          features?: string[] | null
+          icon_key?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean
+          max_passengers?: number
+          name: string
+          name_ru?: string | null
+          name_uz?: string | null
+          service_class: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          description_ru?: string | null
+          description_uz?: string | null
+          estimated_pickup_minutes?: number | null
+          features?: string[] | null
+          icon_key?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean
+          max_passengers?: number
+          name?: string
+          name_ru?: string | null
+          name_uz?: string | null
+          service_class?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       services: {
         Row: {
           created_at: string
@@ -1035,13 +1150,50 @@ export type Database = {
           },
         ]
       }
+      tariff_tiers: {
+        Row: {
+          from_km: number
+          id: string
+          pricing_type: "flat" | "flat_min" | "per_km"
+          rate: number
+          rst_id: string
+          sort_order: number
+          to_km: number | null
+        }
+        Insert: {
+          from_km?: number
+          id?: string
+          pricing_type?: "flat" | "flat_min" | "per_km"
+          rate: number
+          rst_id: string
+          sort_order?: number
+          to_km?: number | null
+        }
+        Update: {
+          from_km?: number
+          id?: string
+          pricing_type?: "flat" | "flat_min" | "per_km"
+          rate?: number
+          rst_id?: string
+          sort_order?: number
+          to_km?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tariff_tiers_rst_id_fkey"
+            columns: ["rst_id"]
+            isOneToOne: false
+            referencedRelation: "region_service_tariffs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tariffs: {
         Row: {
           base_fare: number
           cancellation_fee: number
           created_at: string
           currency: string
-          fare_policy_id: string | null
           id: string
           is_active: boolean
           minimum_fare: number
@@ -1052,8 +1204,8 @@ export type Database = {
           per_km: number
           per_min_driving: number
           per_min_waiting: number
-          region_id: string
-          service_id: string
+          region_id: string | null
+          service_id: string | null
           surge_multiplier: number
           surge_preset: string
           updated_at: string
@@ -1065,7 +1217,6 @@ export type Database = {
           cancellation_fee?: number
           created_at?: string
           currency?: string
-          fare_policy_id?: string | null
           id?: string
           is_active?: boolean
           minimum_fare?: number
@@ -1076,8 +1227,8 @@ export type Database = {
           per_km?: number
           per_min_driving?: number
           per_min_waiting?: number
-          region_id: string
-          service_id: string
+          region_id?: string | null
+          service_id?: string | null
           surge_multiplier?: number
           surge_preset?: string
           updated_at?: string
@@ -1089,7 +1240,6 @@ export type Database = {
           cancellation_fee?: number
           created_at?: string
           currency?: string
-          fare_policy_id?: string | null
           id?: string
           is_active?: boolean
           minimum_fare?: number
@@ -1100,8 +1250,8 @@ export type Database = {
           per_km?: number
           per_min_driving?: number
           per_min_waiting?: number
-          region_id?: string
-          service_id?: string
+          region_id?: string | null
+          service_id?: string | null
           surge_multiplier?: number
           surge_preset?: string
           updated_at?: string
@@ -1137,7 +1287,9 @@ export type Database = {
           is_deleted: boolean
           last_name: string | null
           phone: string | null
+          region_id: string | null
           role: string
+          service_class: string | null
           source: string
           telegram_id: number | null
           total_amount: number
@@ -1157,7 +1309,9 @@ export type Database = {
           is_deleted?: boolean
           last_name?: string | null
           phone?: string | null
+          region_id?: string | null
           role?: string
+          service_class?: string | null
           source?: string
           telegram_id?: number | null
           total_amount?: number
@@ -1177,7 +1331,9 @@ export type Database = {
           is_deleted?: boolean
           last_name?: string | null
           phone?: string | null
+          region_id?: string | null
           role?: string
+          service_class?: string | null
           source?: string
           telegram_id?: number | null
           total_amount?: number
@@ -1186,7 +1342,15 @@ export type Database = {
           updated_at?: string
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "users_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wallet_transactions: {
         Row: {
@@ -1316,18 +1480,32 @@ export type Database = {
         Args: { p_distance_m: number; p_duration_s: number; p_rate_id: number }
         Returns: number
       }
-      find_nearest_online_driver: {
-        Args: {
-          p_exclude_ids?: string[]
-          p_lat: number
-          p_lon: number
-          p_radius_m?: number
-        }
-        Returns: {
-          distance_m: number
-          driver_id: string
-        }[]
-      }
+      find_nearest_online_driver:
+        | {
+            Args: {
+              p_exclude_ids?: string[]
+              p_lat: number
+              p_lon: number
+              p_radius_m?: number
+            }
+            Returns: {
+              distance_m: number
+              driver_id: string
+            }[]
+          }
+        | {
+            Args: {
+              p_exclude_ids?: string[]
+              p_lat: number
+              p_lon: number
+              p_radius_m?: number
+              p_region_id?: string
+            }
+            Returns: {
+              distance_m: number
+              driver_id: string
+            }[]
+          }
       increment_user_stats: {
         Args: {
           p_amount: number
@@ -1493,9 +1671,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       bot_event_type: [

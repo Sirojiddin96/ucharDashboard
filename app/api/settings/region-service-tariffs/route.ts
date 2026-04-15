@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from("region_service_tariffs")
     .select(
-      "*, service_types(id, name, name_uz, name_ru, service_class, max_passengers, is_active), tariffs(id, name, per_km, per_min_driving, base_fare, minimum_fare, currency)"
+      "*, service_types(id, name, name_uz, name_ru, service_class, max_passengers, is_active), tariffs(id, name, per_km, per_min_driving, base_fare, minimum_fare, currency), tariff_tiers(id, from_km, to_km, pricing_type, rate, sort_order)"
     )
     .order("sort_order", { ascending: true });
 
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { region_id, service_type_id, tariff_id, scat_rate_id, is_active, sort_order } = body;
+  const { region_id, service_type_id, tariff_id, scat_rate_id, is_active, sort_order, display_fare, start_fare, minimum_fare } = body;
 
   if (!region_id || !service_type_id) {
     return NextResponse.json({ error: "region_id and service_type_id are required" }, { status: 400 });
@@ -44,9 +44,12 @@ export async function POST(req: NextRequest) {
       scat_rate_id: scat_rate_id ?? null,
       is_active: is_active ?? true,
       sort_order: sort_order ?? 0,
+      display_fare: display_fare ?? 0,
+      start_fare: start_fare ?? 0,
+      minimum_fare: minimum_fare ?? 0,
     })
     .select(
-      "*, service_types(id, name, service_class), tariffs(id, name, per_km, base_fare, currency)"
+      "*, service_types(id, name, service_class), tariffs(id, name, per_km, base_fare, currency), tariff_tiers(id, from_km, to_km, pricing_type, rate, sort_order)"
     )
     .single();
 

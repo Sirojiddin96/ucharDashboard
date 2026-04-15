@@ -3,7 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const SERVICE_CLASSES = ["economy", "standard", "comfort", "business", "minivan", "cargo", "delivery"];
+const SERVICE_CLASSES = [ 
+  "economy", 
+  "standard", 
+  "comfort", 
+  "business", 
+  "minivan", 
+  "intercity", 
+  "delivery",
+  "loads"
+];
 
 type Service = {
   id: string;
