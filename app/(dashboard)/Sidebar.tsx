@@ -19,6 +19,13 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const isDev = process.env.NODE_ENV !== "production";
+  const visibleNavItems = navItems.filter((item) => {
+    if (item.href === "/dispatch" || item.href.startsWith("/settings")) {
+      return isDev;
+    }
+    return true;
+  });
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -39,7 +46,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const active =
             item.href === "/"
               ? pathname === "/"

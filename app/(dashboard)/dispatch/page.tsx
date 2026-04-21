@@ -1,10 +1,14 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import DispatchForm from "./DispatchForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function DispatchPage() {
+  if (process.env.NODE_ENV === "production") {
+    notFound();
+  }
+
   const session = await getSession();
   if (!session.isLoggedIn) redirect("/login");
 

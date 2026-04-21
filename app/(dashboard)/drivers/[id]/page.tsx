@@ -38,7 +38,7 @@ async function getDriverProfile(id: string) {
       .eq("user_id", id)
       .maybeSingle(),
     supabase
-      .from("driver_ratings")
+      .from("app_driver_ratings" as never)
       .select("avg_rating, total_feedbacks")
       .eq("driver_id", id)
       .maybeSingle(),
@@ -49,7 +49,7 @@ async function getDriverProfile(id: string) {
       .order("created_at", { ascending: false })
       .limit(30),
     supabase
-      .from("orders")
+      .from("app_orders" as never)
       .select(
         "id, phone, current_status, final_status, amount, created_at, channel, address"
       )
@@ -81,14 +81,25 @@ async function getDriverProfile(id: string) {
     .eq("id", id)
     .single();
   const regionAssignment = regionRaw?.data as { region_id: string | null; service_class: string | null } | null;
+  const typedRating = (rating ?? null) as { avg_rating: number | null; total_feedbacks: number | null } | null;
+  const typedRecentOrders = (recentOrders ?? []) as Array<{
+    id: string;
+    phone: string | null;
+    current_status: number | null;
+    final_status: number | null;
+    amount: number | null;
+    created_at: string;
+    channel: string;
+    address: string | null;
+  }>;
 
   return {
     user,
     onlineStatus,
     wallet,
-    rating,
+    rating: typedRating,
     transactions,
-    recentOrders,
+    recentOrders: typedRecentOrders,
     application,
     regions: regions ?? [],
     regionId: regionAssignment?.region_id ?? null,

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ActiveOrder } from "./ActiveOrdersTable";
 
 interface Props {
@@ -72,10 +73,10 @@ export default function RecentDriversTable({ orders }: Props) {
                       {o.address ?? "—"}
                     </td>
                     <td className="px-4 py-2.5">
-                      <a href={`/orders/${o.id}`}
+                      <Link href={`/orders/${o.id}`}
                         className="text-indigo-400 hover:text-indigo-300 transition-colors">
                         →
-                      </a>
+                      </Link>
                     </td>
                   </tr>
                 );

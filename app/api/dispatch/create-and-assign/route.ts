@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 
@@ -152,6 +153,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  revalidateTag("orders", {});
+  revalidateTag("overview", {});
   return NextResponse.json(
     { id: order.id, driver_assigned: !!driver_id, driver_name: driverName },
     { status: 201 }

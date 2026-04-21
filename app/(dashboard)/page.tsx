@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { OrdersLineChart, StatusPieChart } from "./Charts";
 import { getStatus } from "@/lib/order-status";
+import { unstable_cache } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -14,49 +15,51 @@ type RecentOrder = {
 };
 
 async function getStats() {
+  const cached = unstable_cache(async () => {
   const [
     { count: totalOrders },
     { count: completedOrders },
     { count: cancelledOrders },
-    { count: totalUsers },
+    { count: totalPassengers },
+    { count: totalDrivers },
     { count: reassignedOrders },
     { data: rawOrders },
     { data: recentOrders },
-    { data: driverRows },
   ] = await Promise.all([
-    supabase.from("orders").select("*", { count: "exact", head: true }),
+    supabase.from("app_orders" as never).select("*", { count: "exact", head: true }),
     supabase
-      .from("orders")
+      .from("app_orders" as never)
       .select("*", { count: "exact", head: true })
       .eq("final_status", 100),
     supabase
-      .from("orders")
+      .from("app_orders" as never)
       .select("*", { count: "exact", head: true })
       .in("final_status", [8, 9]),
-    supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "passenger"),
+    supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "courier"),
+    supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "driver"),
     supabase
-      .from("orders")
+      .from("app_orders" as never)
       .select("*", { count: "exact", head: true })
       .gt("driver_reassignment_count", 0),
     supabase
-      .from("orders")
+      .from("app_orders" as never)
       .select("created_at, final_status")
       .gte(
         "created_at",
         new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
       ),
     supabase
-      .from("orders")
+      .from("app_orders" as never)
       .select("id, phone, final_status, amount, created_at, driver_name")
       .order("created_at", { ascending: false })
       .limit(8),
-    supabase
-      .from("orders")
-      .select("driver_id")
-      .not("driver_id", "is", null),
   ]);
 
-  const uniqueDrivers = new Set((driverRows ?? []).map((r) => r.driver_id).filter(Boolean)).size;
+  const rawOrdersList = (rawOrders ?? []) as Array<{
+    created_at: string;
+    final_status: number | null;
+  }>;
+  const recentOrdersList = (recentOrders ?? []) as RecentOrder[];
 
   // Build orders-per-day map
   const dayMap: Record<string, number> = {};
@@ -65,7 +68,7 @@ async function getStats() {
     const key = d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
     dayMap[key] = 0;
   }
-  for (const o of rawOrders ?? []) {
+  for (const o of rawOrdersList) {
     const key = new Date(o.created_at).toLocaleDateString("ru-RU", {
       day: "2-digit",
       month: "2-digit",
@@ -79,7 +82,7 @@ async function getStats() {
 
   // Build status breakdown
   const statusMap: Record<string, number> = {};
-  for (const o of rawOrders ?? []) {
+  for (const o of rawOrdersList) {
     const s = o.final_status != null ? getStatus(o.final_status).label : "In Progress";
     statusMap[s] = (statusMap[s] ?? 0) + 1;
   }
@@ -92,13 +95,16 @@ async function getStats() {
     totalOrders: totalOrders ?? 0,
     completedOrders: completedOrders ?? 0,
     cancelledOrders: cancelledOrders ?? 0,
-    totalUsers: totalUsers ?? 0,
+    totalPassengers: totalPassengers ?? 0,
+    totalDrivers: totalDrivers ?? 0,
     reassignedOrders: reassignedOrders ?? 0,
     ordersPerDay,
     statusBreakdown,
-    recentOrders: recentOrders ?? [],
-    uniqueDrivers,
+    recentOrders: recentOrdersList,
   };
+  }, ["overview-stats-v1"], { revalidate: 20, tags: ["overview", "orders"] });
+
+  return cached();
 }
 
 function StatCard({
@@ -161,8 +167,8 @@ export default async function OverviewPage() {
         />
         <StatCard
           label="Total Users"
-          value={stats.totalUsers + stats.uniqueDrivers}
-          sub={`Users: ${stats.totalUsers}  ·  Drivers: ${stats.uniqueDrivers}`}
+          value={stats.totalPassengers + stats.totalDrivers}
+          sub={`Users: ${stats.totalPassengers}  ·  Drivers: ${stats.totalDrivers}`}
           color="text-blue-400"
         />
       </div>

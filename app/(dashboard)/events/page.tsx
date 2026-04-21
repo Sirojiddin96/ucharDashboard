@@ -1,5 +1,5 @@
-import type { Enums } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
+import { unstable_cache } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -56,21 +56,29 @@ function eventBadge(type: string) {
 }
 
 async function getEvents(page: number, eventType: string) {
-  const from = (page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
+  const cached = unstable_cache(
+    async () => {
+      const from = (page - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
 
-  let query = supabase
-    .from("bot_events")
-    .select("id, telegram_user_id, event_type, order_id, scat_uuid, metadata, created_at", {
-      count: "exact",
-    })
-    .order("created_at", { ascending: false })
-    .range(from, to);
+      let query = supabase
+        .from("app_bot_events" as never)
+        .select("id, telegram_user_id, event_type, order_id, scat_uuid, metadata, created_at", {
+          count: "exact",
+        })
+        .order("created_at", { ascending: false })
+        .range(from, to);
 
-  if (eventType) query = query.eq("event_type", eventType as Enums<"bot_event_type">);
+      if (eventType) query = query.eq("event_type", eventType);
 
-  const { data, count } = await query;
-  return { events: data ?? [], total: count ?? 0 };
+      const { data, count } = await query;
+      return { events: data ?? [], total: count ?? 0 };
+    },
+    ["events-list-v1", String(page), eventType || "all"],
+    { revalidate: 30, tags: ["events"] }
+  );
+
+  return cached();
 }
 
 export default async function EventsPage({
@@ -83,6 +91,7 @@ export default async function EventsPage({
   const eventType = params.type ?? "";
 
   const { events, total } = await getEvents(page, eventType);
+  const eventRows = (events ?? []) as EventRow[];
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   function pageUrl(p: number) {
@@ -147,7 +156,7 @@ export default async function EventsPage({
               </tr>
             </thead>
             <tbody>
-              {events.map((e: EventRow) => (
+              {eventRows.map((e: EventRow) => (
                 <tr
                   key={e.id}
                   className="border-b border-gray-800/50 hover:bg-gray-800/30 align-top"

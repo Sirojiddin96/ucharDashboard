@@ -158,7 +158,7 @@ export default function MappingsTab({
     setDeleting(null);
   }
 
-  const fmt = (n: number) => n?.toLocaleString("uz-UZ") ?? "0";
+  const fmt = (n: number) => String(n ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
   return (
     <div>
@@ -315,7 +315,7 @@ export default function MappingsTab({
             <tr>
               <th className="px-4 py-3">Xizmat turi</th>
               <th className="px-4 py-3">Klass</th>
-              <th className="px-4 py-3">Ko'rsatish</th>
+              <th className="px-4 py-3">{"Ko'rsatish"}</th>
               <th className="px-4 py-3">Boshlash</th>
               <th className="px-4 py-3">Bosqichlar</th>
               <th className="px-4 py-3">Holat</th>
@@ -326,7 +326,7 @@ export default function MappingsTab({
             {mappings.length === 0 && (
               <tr>
                 <td colSpan={7} className="text-center text-gray-500 py-10">
-                  Bu regionga hali xizmat qo'shilmagan.
+                  {"Bu regionga hali xizmat qo'shilmagan."}
                 </td>
               </tr>
             )}

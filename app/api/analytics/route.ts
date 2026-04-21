@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
   const [{ data: orders }, { data: users }] = await Promise.all([
     supabase
-      .from("orders")
+      .from("app_orders" as never)
       .select(
         "id, created_at, final_status, amount, channel, driver_id, driver_name, distance_m"
       )
@@ -32,7 +32,16 @@ export async function GET(request: Request) {
       .gte("created_at", since),
   ]);
 
-  const orderList = orders ?? [];
+  const orderList = (orders ?? []) as Array<{
+    id: string;
+    created_at: string;
+    final_status: number | null;
+    amount: number | null;
+    channel: string | null;
+    driver_id: string | null;
+    driver_name: string | null;
+    distance_m: number | null;
+  }>;
   const userList = users ?? [];
 
   // Build ordered day keys and labels

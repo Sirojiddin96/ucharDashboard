@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 
@@ -38,7 +39,7 @@ export async function GET(
       .eq("user_id", id)
       .maybeSingle(),
     supabase
-      .from("driver_ratings")
+      .from("app_driver_ratings" as never)
       .select("avg_rating, total_feedbacks")
       .eq("driver_id", id)
       .maybeSingle(),
@@ -49,7 +50,7 @@ export async function GET(
       .order("created_at", { ascending: false })
       .limit(30),
     supabase
-      .from("orders")
+      .from("app_orders" as never)
       .select("id, phone, current_status, final_status, amount, created_at, channel, address")
       .eq("driver_id", id)
       .order("created_at", { ascending: false })
@@ -162,5 +163,6 @@ export async function PATCH(
     }
   }
 
+  revalidateTag("overview", {});
   return NextResponse.json({ ok: true });
 }

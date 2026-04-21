@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { unstable_cache } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -38,31 +39,43 @@ function Stars({ rating }: { rating: number }) {
 }
 
 async function getFeedback(page: number, rating: string) {
-  const from = (page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
+  const cached = unstable_cache(
+    async () => {
+      const from = (page - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
 
-  let query = supabase
-    .from("ride_feedbacks")
-    .select(
-      "id, order_id, telegram_user_id, driver_id, driver_name, car_number, rating, comment, created_at",
-      { count: "exact" }
-    )
-    .order("created_at", { ascending: false })
-    .range(from, to);
+      let query = supabase
+        .from("app_ride_feedbacks" as never)
+        .select(
+          "id, order_id, telegram_user_id, driver_id, driver_name, car_number, rating, comment, created_at",
+          { count: "exact" }
+        )
+        .order("created_at", { ascending: false })
+        .range(from, to);
 
-  if (rating) query = query.eq("rating", Number(rating));
+      if (rating) query = query.eq("rating", Number(rating));
 
-  const { data, count } = await query;
-  return { rows: data ?? [], total: count ?? 0 };
+      const { data, count } = await query;
+      return { rows: data ?? [], total: count ?? 0 };
+    },
+    ["feedback-list-v1", String(page), rating || "all"],
+    { revalidate: 30, tags: ["feedback"] }
+  );
+
+  return cached();
 }
 
 async function getAverageRating() {
-  const { data } = await supabase
-    .from("ride_feedbacks")
-    .select("rating");
-  if (!data || data.length === 0) return null;
-  const avg = data.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / data.length;
-  return avg.toFixed(2);
+  const cached = unstable_cache(async () => {
+    const { data } = await supabase
+      .from("app_ride_feedbacks" as never)
+      .select("rating");
+    if (!data || data.length === 0) return null;
+    const avg = data.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / data.length;
+    return avg.toFixed(2);
+  }, ["feedback-avg-v1"], { revalidate: 60, tags: ["feedback"] });
+
+  return cached();
 }
 
 export default async function FeedbackPage({

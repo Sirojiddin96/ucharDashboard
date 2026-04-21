@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getStatus, CHANNEL_LABELS } from "@/lib/order-status";
 import OrderTimeline from "./OrderTimeline";
@@ -109,9 +110,9 @@ export default async function OrderDetailPage({
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 flex-wrap">
-            <a href="/orders?tab=live" className="text-gray-500 hover:text-gray-300 text-sm">
+            <Link href="/orders?tab=live" className="text-gray-500 hover:text-gray-300 text-sm">
               ← Orders
-            </a>
+            </Link>
             <span className="text-gray-700">/</span>
             <span className="text-gray-400 font-mono text-sm">{order.id.slice(0, 8)}…</span>
           </div>

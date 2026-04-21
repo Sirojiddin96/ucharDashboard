@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 
@@ -57,5 +58,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  revalidateTag("orders", {});
+  revalidateTag("overview", {});
   return NextResponse.json({ id: data.id }, { status: 201 });
 }

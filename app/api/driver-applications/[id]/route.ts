@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { supabase } from "@/lib/supabase";
 
 const ALLOWED_STATUSES = ["approved", "rejected"] as const;
@@ -92,5 +93,6 @@ export async function PATCH(
     }
   }
 
+  revalidateTag("overview", {});
   return NextResponse.json({ ok: true });
 }

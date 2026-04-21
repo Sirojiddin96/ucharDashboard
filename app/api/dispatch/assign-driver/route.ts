@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 
@@ -98,5 +99,7 @@ export async function POST(req: NextRequest) {
     console.error("order_driver_assignments insert failed:", assignError.message);
   }
 
+  revalidateTag("orders", {});
+  revalidateTag("overview", {});
   return NextResponse.json({ ok: true, driver_name: driverName });
 }

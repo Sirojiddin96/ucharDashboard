@@ -147,7 +147,7 @@ export default function PricingModal({
     setDeletingId(null);
   }
 
-  const fmt = (n: number) => n.toLocaleString("uz-UZ");
+  const fmt = (n: number) => String(n ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-start justify-center p-4 overflow-y-auto">

@@ -1,6 +1,8 @@
 import { supabase } from "@/lib/supabase";
+import Link from "next/link";
 import LiveTabContent from "./LiveTabContent";
 import { getStatus, CHANNEL_LABELS } from "@/lib/order-status";
+import { unstable_cache } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -30,23 +32,32 @@ const FINAL_STATUS_OPTIONS = [
 ];
 
 async function getHistory(page: number, finalStatus: string) {
-  const from = (page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
+  const cached = unstable_cache(
+    async () => {
+      const from = (page - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const db = supabase as any;
 
-  let query = supabase
-    .from("orders")
-    .select(
-      "id, scat_uuid, phone, final_status, current_status, driver_name, car_number, amount, created_at, completed_at, channel, driver_reassignment_count",
-      { count: "exact" }
-    )
-    .not("final_status", "is", null)
-    .order("created_at", { ascending: false })
-    .range(from, to);
+      let query = db
+        .from("app_orders")
+        .select(
+          "id, scat_uuid, phone, final_status, current_status, driver_name, car_number, amount, created_at, completed_at, channel, driver_reassignment_count",
+          { count: "exact" }
+        )
+        .not("final_status", "is", null)
+        .order("created_at", { ascending: false })
+        .range(from, to);
 
-  if (finalStatus) query = query.eq("final_status", Number(finalStatus));
+      if (finalStatus) query = query.eq("final_status", Number(finalStatus));
 
-  const { data, count } = await query;
-  return { orders: (data ?? []) as OrderRow[], total: count ?? 0 };
+      const { data, count } = await query;
+      return { orders: (data ?? []) as OrderRow[], total: count ?? 0 };
+    },
+    ["orders-history-page-v1", String(page), finalStatus || "all"],
+    { revalidate: 15, tags: ["orders"] }
+  );
+
+  return cached();
 }
 
 export default async function OrdersPage({
@@ -87,7 +98,7 @@ export default async function OrdersPage({
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-gray-800">
-        <a
+        <Link
           href="/orders?tab=live"
           className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
             tab === "live"
@@ -96,8 +107,8 @@ export default async function OrdersPage({
           }`}
         >
           Live Board
-        </a>
-        <a
+        </Link>
+        <Link
           href="/orders?tab=history"
           className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
             tab === "history"
@@ -109,7 +120,7 @@ export default async function OrdersPage({
           {tab === "history" && (
             <span className="ml-2 text-xs text-gray-500">{total}</span>
           )}
-        </a>
+        </Link>
       </div>
 
       {tab === "live" ? (
@@ -119,7 +130,7 @@ export default async function OrdersPage({
           {/* Status filter */}
           <div className="flex gap-2 flex-wrap">
             {FINAL_STATUS_OPTIONS.map((opt) => (
-              <a
+              <Link
                 key={opt.value}
                 href={statusUrl(opt.value)}
                 className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${
@@ -129,7 +140,7 @@ export default async function OrdersPage({
                 }`}
               >
                 {opt.label}
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -157,9 +168,9 @@ export default async function OrdersPage({
                         className="border-b border-gray-800/50 hover:bg-gray-800/30"
                       >
                         <td className="px-4 py-3">
-                          <a href={`/orders/${o.id}`} className="text-gray-200 hover:text-indigo-300 transition-colors">
+                          <Link href={`/orders/${o.id}`} className="text-gray-200 hover:text-indigo-300 transition-colors">
                             {o.phone ?? "—"}
-                          </a>
+                          </Link>
                           {o.driver_reassignment_count > 0 && (
                             <span className="ml-2 text-xs text-orange-400">↺{o.driver_reassignment_count}</span>
                           )}
