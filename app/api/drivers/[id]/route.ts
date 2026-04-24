@@ -24,7 +24,7 @@ export async function GET(
     { data: application },
   ] = await Promise.all([
     supabase
-      .from("users")
+      .from("tax_users")
       .select("id, first_name, last_name, username, phone, role, source, badge, total_rides, total_amount, total_ride_minutes, created_at, is_deleted")
       .eq("id", id)
       .single(),
@@ -145,7 +145,7 @@ export async function PATCH(
 
   // ── Apply users update ────────────────────────────────────────────────────
   if (hasUserUpdates) {
-    const { error } = await supabase.from("users").update(userUpdates).eq("id", id);
+    const { error } = await supabase.from("tax_users").update(userUpdates).eq("id", id);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

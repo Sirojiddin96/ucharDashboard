@@ -12,7 +12,7 @@ export async function GET() {
     .from("driver_online_status")
     .select(
       `driver_id, is_online, lat, lon, updated_at,
-       users!driver_online_status_driver_id_fkey(
+       tax_users!driver_online_status_driver_id_fkey(
          id, first_name, last_name, phone
        )`
     )

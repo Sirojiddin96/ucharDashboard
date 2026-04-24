@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { data, error } = await supabase
-    .from("users")
+    .from("tax_users")
     .select("id, telegram_id, first_name, last_name, username, phone, role, total_rides")
     .eq("phone", phone)
     .eq("is_deleted", false)

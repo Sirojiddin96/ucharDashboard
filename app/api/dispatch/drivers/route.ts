@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   // ── Phone/name search mode ────────────────────────────────────────────────
   if (q) {
     let query = supabase
-      .from("users")
+      .from("tax_users")
       .select("id, first_name, last_name, phone")
       .eq("role", "driver")
       .eq("is_deleted", false)
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
   );
 
   const { data: users, error: usersError } = await supabase
-    .from("users")
+    .from("tax_users")
     .select("id, first_name, last_name, phone")
     .in("id", ids);
 

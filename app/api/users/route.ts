@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const to = from + PAGE_SIZE - 1;
 
   let query = supabase
-    .from("users")
+    .from("tax_users")
     .select(
       "id, first_name, last_name, username, phone, role, badge, total_rides, total_amount, is_deleted, created_at",
       { count: "exact" }

@@ -18,7 +18,7 @@ interface DriverStatus {
   lat: number;
   lon: number;
   updated_at: string;
-  users: DriverUser | null;
+  tax_users: DriverUser | null;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -201,7 +201,7 @@ export default function DriverMap() {
   // ── Sidebar panel ─────────────────────────────────────────────────────────
   function DriverPanel({ driver }: { driver: DriverStatus }) {
     const name =
-      [driver.users?.first_name, driver.users?.last_name]
+      [driver.tax_users?.first_name, driver.tax_users?.last_name]
         .filter(Boolean)
         .join(" ") || "—";
     const age = Math.floor(
@@ -223,7 +223,7 @@ export default function DriverMap() {
           <span className="text-xs text-green-400">● online</span>
         </div>
         <div className="flex items-center justify-between mt-0.5">
-          <span className="text-xs text-gray-400">{driver.users?.phone ?? driver.driver_id.slice(0, 8)}</span>
+          <span className="text-xs text-gray-400">{driver.tax_users?.phone ?? driver.driver_id.slice(0, 8)}</span>
           <span className="text-xs text-gray-500">{ageLabel}</span>
         </div>
       </div>
@@ -269,7 +269,7 @@ export default function DriverMap() {
           <div className="absolute top-3 left-3 z-1000 bg-gray-900/90 border border-gray-700 rounded-xl px-4 py-3 text-sm backdrop-blur-sm max-w-xs">
             <div className="flex items-center justify-between mb-1">
               <span className="font-semibold text-white">
-                {[selectedDriver.users?.first_name, selectedDriver.users?.last_name]
+                {[selectedDriver.tax_users?.first_name, selectedDriver.tax_users?.last_name]
                   .filter(Boolean)
                   .join(" ") || "Driver"}
               </span>
@@ -278,7 +278,7 @@ export default function DriverMap() {
                 className="text-gray-500 hover:text-gray-300 ml-4 text-xs"
               >✕</button>
             </div>
-            <p className="text-gray-400 text-xs">{selectedDriver.users?.phone ?? selectedDriver.driver_id}</p>
+            <p className="text-gray-400 text-xs">{selectedDriver.tax_users?.phone ?? selectedDriver.driver_id}</p>
             <p className="text-gray-500 text-xs mt-1">
               {selectedDriver.lat.toFixed(5)}, {selectedDriver.lon.toFixed(5)}
             </p>

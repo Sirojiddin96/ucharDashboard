@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 
   // Look up driver user info
   const { data: driver, error: driverError } = await supabase
-    .from("users")
+    .from("tax_users")
     .select("id, first_name, last_name, phone")
     .eq("id", driver_id)
     .single();

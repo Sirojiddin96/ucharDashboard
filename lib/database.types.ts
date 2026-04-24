@@ -14,36 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      app_versions: {
-        Row: {
-          latest_build: number
-          latest_version: string
-          notes_ru: string | null
-          notes_uz: string | null
-          platform: string
-          store_url: string
-          updated_at: string
-        }
-        Insert: {
-          latest_build?: number
-          latest_version: string
-          notes_ru?: string | null
-          notes_uz?: string | null
-          platform: string
-          store_url: string
-          updated_at?: string
-        }
-        Update: {
-          latest_build?: number
-          latest_version?: string
-          notes_ru?: string | null
-          notes_uz?: string | null
-          platform?: string
-          store_url?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       bot_events: {
         Row: {
           created_at: string
@@ -91,72 +61,55 @@ export type Database = {
             foreignKeyName: "bot_events_telegram_user_id_fkey"
             columns: ["telegram_user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "bot_users"
             referencedColumns: ["telegram_id"]
           },
         ]
       }
-      default_addresses: {
+      bot_users: {
         Row: {
-          address: string
-          category: string
+          badge: string
+          badge_updated_at: string | null
           created_at: string
-          icon_key: string | null
-          id: string
-          is_active: boolean
-          latitude: number
-          longitude: number
-          name: string
-          name_ru: string | null
-          name_uz: string | null
-          region_id: string
-          short_name: string | null
-          sort_order: number
+          first_name: string | null
+          last_name: string | null
+          phone: string | null
+          telegram_id: number
+          total_amount: number
+          total_ride_minutes: number
+          total_rides: number
           updated_at: string
+          username: string | null
         }
         Insert: {
-          address: string
-          category?: string
+          badge?: string
+          badge_updated_at?: string | null
           created_at?: string
-          icon_key?: string | null
-          id?: string
-          is_active?: boolean
-          latitude: number
-          longitude: number
-          name: string
-          name_ru?: string | null
-          name_uz?: string | null
-          region_id: string
-          short_name?: string | null
-          sort_order?: number
+          first_name?: string | null
+          last_name?: string | null
+          phone?: string | null
+          telegram_id: number
+          total_amount?: number
+          total_ride_minutes?: number
+          total_rides?: number
           updated_at?: string
+          username?: string | null
         }
         Update: {
-          address?: string
-          category?: string
+          badge?: string
+          badge_updated_at?: string | null
           created_at?: string
-          icon_key?: string | null
-          id?: string
-          is_active?: boolean
-          latitude?: number
-          longitude?: number
-          name?: string
-          name_ru?: string | null
-          name_uz?: string | null
-          region_id?: string
-          short_name?: string | null
-          sort_order?: number
+          first_name?: string | null
+          last_name?: string | null
+          phone?: string | null
+          telegram_id?: number
+          total_amount?: number
+          total_ride_minutes?: number
+          total_rides?: number
           updated_at?: string
+          username?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "default_addresses_region_id_fkey"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "regions"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       device_tokens: {
         Row: {
@@ -188,279 +141,7 @@ export type Database = {
             foreignKeyName: "device_tokens_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      driver_announcement_reads: {
-        Row: {
-          announcement_id: string
-          driver_id: string
-          read_at: string
-        }
-        Insert: {
-          announcement_id: string
-          driver_id: string
-          read_at?: string
-        }
-        Update: {
-          announcement_id?: string
-          driver_id?: string
-          read_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "driver_announcement_reads_announcement_id_fkey"
-            columns: ["announcement_id"]
-            isOneToOne: false
-            referencedRelation: "driver_announcements"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "driver_announcement_reads_driver_id_fkey"
-            columns: ["driver_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      driver_announcements: {
-        Row: {
-          body: string | null
-          body_ru: string | null
-          body_uz: string | null
-          created_at: string
-          id: string
-          is_active: boolean
-          published_at: string
-          title: string
-          title_ru: string | null
-          title_uz: string | null
-        }
-        Insert: {
-          body?: string | null
-          body_ru?: string | null
-          body_uz?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          published_at?: string
-          title: string
-          title_ru?: string | null
-          title_uz?: string | null
-        }
-        Update: {
-          body?: string | null
-          body_ru?: string | null
-          body_uz?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          published_at?: string
-          title?: string
-          title_ru?: string | null
-          title_uz?: string | null
-        }
-        Relationships: []
-      }
-      driver_applications: {
-        Row: {
-          call_sign: string | null
-          car_brand_client: string
-          car_brand_dispatcher: string
-          car_color_client: string
-          car_color_dispatcher: string
-          car_reg_number: string
-          city: string
-          connection_type: string
-          created_at: string
-          driver_license: string
-          first_name: string
-          id: string
-          last_name: string
-          middle_name: string
-          phone: string | null
-          photo_url: string | null
-          profile: string
-          service: string
-          status: string
-          user_id: string | null
-        }
-        Insert: {
-          call_sign?: string | null
-          car_brand_client: string
-          car_brand_dispatcher: string
-          car_color_client: string
-          car_color_dispatcher: string
-          car_reg_number: string
-          city: string
-          connection_type?: string
-          created_at?: string
-          driver_license: string
-          first_name: string
-          id?: string
-          last_name: string
-          middle_name?: string
-          phone?: string | null
-          photo_url?: string | null
-          profile: string
-          service: string
-          status?: string
-          user_id?: string | null
-        }
-        Update: {
-          call_sign?: string | null
-          car_brand_client?: string
-          car_brand_dispatcher?: string
-          car_color_client?: string
-          car_color_dispatcher?: string
-          car_reg_number?: string
-          city?: string
-          connection_type?: string
-          created_at?: string
-          driver_license?: string
-          first_name?: string
-          id?: string
-          last_name?: string
-          middle_name?: string
-          phone?: string | null
-          photo_url?: string | null
-          profile?: string
-          service?: string
-          status?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "driver_applications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      driver_fcm_tokens: {
-        Row: {
-          driver_id: string
-          token: string
-          updated_at: string
-        }
-        Insert: {
-          driver_id: string
-          token: string
-          updated_at?: string
-        }
-        Update: {
-          driver_id?: string
-          token?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      driver_offers: {
-        Row: {
-          attempt_number: number
-          distance_m: number | null
-          driver_id: string
-          dropoff_address: string | null
-          estimated_fare: number | null
-          expires_at: string
-          id: string
-          offered_at: string
-          order_id: string
-          pickup_address: string | null
-          pickup_lat: number | null
-          pickup_lon: number | null
-          responded_at: string | null
-          status: string
-        }
-        Insert: {
-          attempt_number?: number
-          distance_m?: number | null
-          driver_id: string
-          dropoff_address?: string | null
-          estimated_fare?: number | null
-          expires_at: string
-          id?: string
-          offered_at?: string
-          order_id: string
-          pickup_address?: string | null
-          pickup_lat?: number | null
-          pickup_lon?: number | null
-          responded_at?: string | null
-          status?: string
-        }
-        Update: {
-          attempt_number?: number
-          distance_m?: number | null
-          driver_id?: string
-          dropoff_address?: string | null
-          estimated_fare?: number | null
-          expires_at?: string
-          id?: string
-          offered_at?: string
-          order_id?: string
-          pickup_address?: string | null
-          pickup_lat?: number | null
-          pickup_lon?: number | null
-          responded_at?: string | null
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "driver_offers_driver_id_fkey"
-            columns: ["driver_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "driver_offers_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "driver_offers_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders_with_reassignments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      driver_online_status: {
-        Row: {
-          driver_id: string
-          is_online: boolean
-          lat: number | null
-          lon: number | null
-          updated_at: string
-        }
-        Insert: {
-          driver_id: string
-          is_online?: boolean
-          lat?: number | null
-          lon?: number | null
-          updated_at?: string
-        }
-        Update: {
-          driver_id?: string
-          is_online?: boolean
-          lat?: number | null
-          lon?: number | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "driver_online_status_driver_id_fkey"
-            columns: ["driver_id"]
-            isOneToOne: true
-            referencedRelation: "users"
+            referencedRelation: "tax_users"
             referencedColumns: ["id"]
           },
         ]
@@ -578,11 +259,8 @@ export type Database = {
       }
       orders: {
         Row: {
-          address: string | null
           amount: number | null
           billing_started_at: string | null
-          bot_id: string | null
-          bot_token: string | null
           cancelled_at: string | null
           car_brand: string | null
           car_color: string | null
@@ -599,28 +277,21 @@ export type Database = {
           driver_id: string | null
           driver_name: string | null
           driver_reassignment_count: number
-          dropoff_address: string | null
           final_status: number | null
           gps_accuracy: number | null
           id: string
           latitude: number
           longitude: number
-          note: string | null
           phone: string | null
           polling_stopped_at: string | null
-          region_id: string | null
           scat_uuid: string | null
-          service_id: string | null
           telegram_user_id: number | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
-          address?: string | null
           amount?: number | null
           billing_started_at?: string | null
-          bot_id?: string | null
-          bot_token?: string | null
           cancelled_at?: string | null
           car_brand?: string | null
           car_color?: string | null
@@ -637,28 +308,21 @@ export type Database = {
           driver_id?: string | null
           driver_name?: string | null
           driver_reassignment_count?: number
-          dropoff_address?: string | null
           final_status?: number | null
           gps_accuracy?: number | null
           id?: string
           latitude: number
           longitude: number
-          note?: string | null
           phone?: string | null
           polling_stopped_at?: string | null
-          region_id?: string | null
           scat_uuid?: string | null
-          service_id?: string | null
           telegram_user_id?: number | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
-          address?: string | null
           amount?: number | null
           billing_started_at?: string | null
-          bot_id?: string | null
-          bot_token?: string | null
           cancelled_at?: string | null
           car_brand?: string | null
           car_color?: string | null
@@ -675,49 +339,31 @@ export type Database = {
           driver_id?: string | null
           driver_name?: string | null
           driver_reassignment_count?: number
-          dropoff_address?: string | null
           final_status?: number | null
           gps_accuracy?: number | null
           id?: string
           latitude?: number
           longitude?: number
-          note?: string | null
           phone?: string | null
           polling_stopped_at?: string | null
-          region_id?: string | null
           scat_uuid?: string | null
-          service_id?: string | null
           telegram_user_id?: number | null
           updated_at?: string
           user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "orders_region_id_fkey"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "regions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "services"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "orders_telegram_user_id_fkey"
             columns: ["telegram_user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "bot_users"
             referencedColumns: ["telegram_id"]
           },
           {
             foreignKeyName: "orders_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "tax_users"
             referencedColumns: ["id"]
           },
         ]
@@ -746,149 +392,6 @@ export type Database = {
           id?: string
           otp_hash?: string
           phone?: string
-        }
-        Relationships: []
-      }
-      region_service_tariffs: {
-        Row: {
-          created_at: string
-          display_fare: number
-          id: string
-          is_active: boolean
-          minimum_fare: number
-          region_id: string
-          scat_rate_id: number | null
-          service_type_id: string
-          sort_order: number
-          start_fare: number
-          tariff_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          display_fare?: number
-          id?: string
-          is_active?: boolean
-          minimum_fare?: number
-          region_id: string
-          scat_rate_id?: number | null
-          service_type_id: string
-          sort_order?: number
-          start_fare?: number
-          tariff_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          display_fare?: number
-          id?: string
-          is_active?: boolean
-          minimum_fare?: number
-          region_id?: string
-          scat_rate_id?: number | null
-          service_type_id?: string
-          sort_order?: number
-          start_fare?: number
-          tariff_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rst_region_fk"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "regions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rst_scat_rate_fk"
-            columns: ["scat_rate_id"]
-            isOneToOne: false
-            referencedRelation: "scat_rates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rst_service_type_fk"
-            columns: ["service_type_id"]
-            isOneToOne: false
-            referencedRelation: "service_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rst_tariff_fk"
-            columns: ["tariff_id"]
-            isOneToOne: false
-            referencedRelation: "tariffs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      regions: {
-        Row: {
-          bounds_ne_lat: number | null
-          bounds_ne_lon: number | null
-          bounds_sw_lat: number | null
-          bounds_sw_lon: number | null
-          center_lat: number
-          center_lon: number
-          country_code: string
-          created_at: string
-          currency: string
-          id: string
-          is_active: boolean
-          min_gps_accuracy_meters: number | null
-          name: string
-          name_ru: string | null
-          name_uz: string | null
-          scat_zone_id: string | null
-          slug: string
-          sort_order: number
-          timezone: string
-          updated_at: string
-        }
-        Insert: {
-          bounds_ne_lat?: number | null
-          bounds_ne_lon?: number | null
-          bounds_sw_lat?: number | null
-          bounds_sw_lon?: number | null
-          center_lat: number
-          center_lon: number
-          country_code?: string
-          created_at?: string
-          currency?: string
-          id?: string
-          is_active?: boolean
-          min_gps_accuracy_meters?: number | null
-          name: string
-          name_ru?: string | null
-          name_uz?: string | null
-          scat_zone_id?: string | null
-          slug: string
-          sort_order?: number
-          timezone?: string
-          updated_at?: string
-        }
-        Update: {
-          bounds_ne_lat?: number | null
-          bounds_ne_lon?: number | null
-          bounds_sw_lat?: number | null
-          bounds_sw_lon?: number | null
-          center_lat?: number
-          center_lon?: number
-          country_code?: string
-          created_at?: string
-          currency?: string
-          id?: string
-          is_active?: boolean
-          min_gps_accuracy_meters?: number | null
-          name?: string
-          name_ru?: string | null
-          name_uz?: string | null
-          scat_zone_id?: string | null
-          slug?: string
-          sort_order?: number
-          timezone?: string
-          updated_at?: string
         }
         Relationships: []
       }
@@ -954,7 +457,7 @@ export type Database = {
             foreignKeyName: "ride_feedbacks_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "tax_users"
             referencedColumns: ["id"]
           },
         ]
@@ -1019,263 +522,7 @@ export type Database = {
         }
         Relationships: []
       }
-      service_types: {
-        Row: {
-          created_at: string
-          description: string | null
-          description_ru: string | null
-          description_uz: string | null
-          estimated_pickup_minutes: number | null
-          features: string[] | null
-          icon_key: string | null
-          icon_url: string | null
-          id: string
-          is_active: boolean
-          max_passengers: number
-          name: string
-          name_ru: string | null
-          name_uz: string | null
-          service_class: string
-          sort_order: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          description_ru?: string | null
-          description_uz?: string | null
-          estimated_pickup_minutes?: number | null
-          features?: string[] | null
-          icon_key?: string | null
-          icon_url?: string | null
-          id?: string
-          is_active?: boolean
-          max_passengers?: number
-          name: string
-          name_ru?: string | null
-          name_uz?: string | null
-          service_class: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          description_ru?: string | null
-          description_uz?: string | null
-          estimated_pickup_minutes?: number | null
-          features?: string[] | null
-          icon_key?: string | null
-          icon_url?: string | null
-          id?: string
-          is_active?: boolean
-          max_passengers?: number
-          name?: string
-          name_ru?: string | null
-          name_uz?: string | null
-          service_class?: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      services: {
-        Row: {
-          created_at: string
-          description: string | null
-          description_ru: string | null
-          description_uz: string | null
-          estimated_pickup_minutes: number | null
-          features: string[] | null
-          icon_key: string | null
-          icon_url: string | null
-          id: string
-          is_active: boolean
-          max_passengers: number
-          name: string
-          name_ru: string | null
-          name_uz: string | null
-          region_id: string
-          service_class: string
-          sort_order: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          description_ru?: string | null
-          description_uz?: string | null
-          estimated_pickup_minutes?: number | null
-          features?: string[] | null
-          icon_key?: string | null
-          icon_url?: string | null
-          id?: string
-          is_active?: boolean
-          max_passengers?: number
-          name: string
-          name_ru?: string | null
-          name_uz?: string | null
-          region_id: string
-          service_class: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          description_ru?: string | null
-          description_uz?: string | null
-          estimated_pickup_minutes?: number | null
-          features?: string[] | null
-          icon_key?: string | null
-          icon_url?: string | null
-          id?: string
-          is_active?: boolean
-          max_passengers?: number
-          name?: string
-          name_ru?: string | null
-          name_uz?: string | null
-          region_id?: string
-          service_class?: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "services_region_id_fkey"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "regions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tariff_tiers: {
-        Row: {
-          from_km: number
-          id: string
-          pricing_type: "flat" | "flat_min" | "per_km"
-          rate: number
-          rst_id: string
-          sort_order: number
-          to_km: number | null
-        }
-        Insert: {
-          from_km?: number
-          id?: string
-          pricing_type?: "flat" | "flat_min" | "per_km"
-          rate: number
-          rst_id: string
-          sort_order?: number
-          to_km?: number | null
-        }
-        Update: {
-          from_km?: number
-          id?: string
-          pricing_type?: "flat" | "flat_min" | "per_km"
-          rate?: number
-          rst_id?: string
-          sort_order?: number
-          to_km?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tariff_tiers_rst_id_fkey"
-            columns: ["rst_id"]
-            isOneToOne: false
-            referencedRelation: "region_service_tariffs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tariffs: {
-        Row: {
-          base_fare: number
-          cancellation_fee: number
-          created_at: string
-          currency: string
-          id: string
-          is_active: boolean
-          minimum_fare: number
-          name: string | null
-          night_end_hour: number | null
-          night_start_hour: number | null
-          night_surcharge: number
-          per_km: number
-          per_min_driving: number
-          per_min_waiting: number
-          region_id: string | null
-          service_id: string | null
-          surge_multiplier: number
-          surge_preset: string
-          updated_at: string
-          valid_from: string | null
-          valid_to: string | null
-        }
-        Insert: {
-          base_fare?: number
-          cancellation_fee?: number
-          created_at?: string
-          currency?: string
-          id?: string
-          is_active?: boolean
-          minimum_fare?: number
-          name?: string | null
-          night_end_hour?: number | null
-          night_start_hour?: number | null
-          night_surcharge?: number
-          per_km?: number
-          per_min_driving?: number
-          per_min_waiting?: number
-          region_id?: string | null
-          service_id?: string | null
-          surge_multiplier?: number
-          surge_preset?: string
-          updated_at?: string
-          valid_from?: string | null
-          valid_to?: string | null
-        }
-        Update: {
-          base_fare?: number
-          cancellation_fee?: number
-          created_at?: string
-          currency?: string
-          id?: string
-          is_active?: boolean
-          minimum_fare?: number
-          name?: string | null
-          night_end_hour?: number | null
-          night_start_hour?: number | null
-          night_surcharge?: number
-          per_km?: number
-          per_min_driving?: number
-          per_min_waiting?: number
-          region_id?: string | null
-          service_id?: string | null
-          surge_multiplier?: number
-          surge_preset?: string
-          updated_at?: string
-          valid_from?: string | null
-          valid_to?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tariffs_region_id_fkey"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "regions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tariffs_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "services"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      users: {
+      tax_users: {
         Row: {
           auth_user_id: string | null
           badge: string
@@ -1284,12 +531,8 @@ export type Database = {
           fcm_token: string | null
           first_name: string | null
           id: string
-          is_deleted: boolean
           last_name: string | null
-          phone: string | null
-          region_id: string | null
-          role: string
-          service_class: string | null
+          phone: string
           source: string
           telegram_id: number | null
           total_amount: number
@@ -1306,12 +549,8 @@ export type Database = {
           fcm_token?: string | null
           first_name?: string | null
           id?: string
-          is_deleted?: boolean
           last_name?: string | null
-          phone?: string | null
-          region_id?: string | null
-          role?: string
-          service_class?: string | null
+          phone: string
           source?: string
           telegram_id?: number | null
           total_amount?: number
@@ -1328,12 +567,8 @@ export type Database = {
           fcm_token?: string | null
           first_name?: string | null
           id?: string
-          is_deleted?: boolean
           last_name?: string | null
-          phone?: string | null
-          region_id?: string | null
-          role?: string
-          service_class?: string | null
+          phone?: string
           source?: string
           telegram_id?: number | null
           total_amount?: number
@@ -1342,99 +577,7 @@ export type Database = {
           updated_at?: string
           username?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "users_region_id_fkey"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "regions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wallet_transactions: {
-        Row: {
-          amount: number
-          balance_after: number
-          created_at: string
-          id: string
-          note: string | null
-          order_id: string | null
-          type: string
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          balance_after: number
-          created_at?: string
-          id?: string
-          note?: string | null
-          order_id?: string | null
-          type: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          balance_after?: number
-          created_at?: string
-          id?: string
-          note?: string | null
-          order_id?: string | null
-          type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wallet_transactions_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wallet_transactions_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders_with_reassignments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wallet_transactions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wallets: {
-        Row: {
-          balance: number
-          reserved: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          balance?: number
-          reserved?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          balance?: number
-          reserved?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wallets_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
@@ -1476,51 +619,12 @@ export type Database = {
       }
     }
     Functions: {
-      calculate_fare: {
-        Args: { p_distance_m: number; p_duration_s: number; p_rate_id: number }
-        Returns: number
-      }
-      find_nearest_online_driver:
-        | {
-            Args: {
-              p_exclude_ids?: string[]
-              p_lat: number
-              p_lon: number
-              p_radius_m?: number
-            }
-            Returns: {
-              distance_m: number
-              driver_id: string
-            }[]
-          }
-        | {
-            Args: {
-              p_exclude_ids?: string[]
-              p_lat: number
-              p_lon: number
-              p_radius_m?: number
-              p_region_id?: string
-            }
-            Returns: {
-              distance_m: number
-              driver_id: string
-            }[]
-          }
       increment_user_stats: {
         Args: {
           p_amount: number
           p_ride_minutes: number
           p_telegram_id: number
         }
-        Returns: undefined
-      }
-      wallet_charge: {
-        Args: { p_final_amount: number; p_order_id: string }
-        Returns: undefined
-      }
-      wallet_release: { Args: { p_order_id: string }; Returns: undefined }
-      wallet_reserve: {
-        Args: { p_amount: number; p_driver_id: string; p_order_id: string }
         Returns: undefined
       }
     }

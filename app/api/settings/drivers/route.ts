@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q");
 
   let query = (supabase as any)
-    .from("users")
+    .from("tax_users")
     .select("id, full_name, phone, service_class, is_active, region_id")
     .eq("role", "driver")
     .order("full_name", { ascending: true });

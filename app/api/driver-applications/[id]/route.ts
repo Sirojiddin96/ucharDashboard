@@ -88,7 +88,7 @@ export async function PATCH(
       }
 
       if (Object.keys(userUpdates).length > 0) {
-        await supabase.from("users").update(userUpdates).eq("id", app.user_id);
+        await supabase.from("tax_users").update(userUpdates).eq("id", app.user_id);
       }
     }
   }

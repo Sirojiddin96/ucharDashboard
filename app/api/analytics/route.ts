@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       )
       .gte("created_at", since),
     supabase
-      .from("users")
+      .from("tax_users")
       .select("id, created_at, role")
       .gte("created_at", since),
   ]);

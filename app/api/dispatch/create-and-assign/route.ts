@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   let driverName: string | null = null;
   if (driver_id) {
     const { data: driver, error: driverErr } = await supabase
-      .from("users")
+      .from("tax_users")
       .select("id, first_name, last_name, phone")
       .eq("id", driver_id)
       .single();
