@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { getSession } from "@/lib/session";
-import { supabase } from "@/lib/supabase";
+import { getTenantClient } from "@/lib/tenant-client";
 
 interface Body {
   // Order fields
@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
   if (!session.isLoggedIn) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const db = await getTenantClient(session.organizationId);
 
   let body: Body;
   try {
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
   // ── Resolve driver info if provided ─────────────────────────────────────
   let driverName: string | null = null;
   if (driver_id) {
-    const { data: driver, error: driverErr } = await supabase
+    const { data: driver, error: driverErr } = await db
       .from("tax_users")
       .select("id, first_name, last_name, phone")
       .eq("id", driver_id)
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
   const now = new Date().toISOString();
 
   // ── Create order ─────────────────────────────────────────────────────────
-  const { data: order, error: orderError } = await supabase
+  const { data: order, error: orderError } = await db
     .from("orders")
     .insert({
       phone,
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
 
   // ── Log assignment record if driver was assigned ─────────────────────────
   if (driver_id && driverName) {
-    const { error: assignError } = await supabase
+    const { error: assignError } = await db
       .from("order_driver_assignments")
       .insert({
         order_id: order.id,

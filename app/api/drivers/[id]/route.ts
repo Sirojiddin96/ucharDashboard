@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { getSession } from "@/lib/session";
-import { supabase } from "@/lib/supabase";
+import { getTenantClient } from "@/lib/tenant-client";
 
 export async function GET(
   _req: NextRequest,
@@ -11,6 +11,7 @@ export async function GET(
   if (!session.isLoggedIn) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const db = await getTenantClient(session.organizationId);
 
   const { id } = await params;
 
@@ -23,39 +24,39 @@ export async function GET(
     { data: recentOrders },
     { data: application },
   ] = await Promise.all([
-    supabase
+    db
       .from("tax_users")
       .select("id, first_name, last_name, username, phone, role, source, badge, total_rides, total_amount, total_ride_minutes, created_at, is_deleted")
       .eq("id", id)
       .single(),
-    supabase
+    db
       .from("driver_online_status")
       .select("is_online, lat, lon, updated_at")
       .eq("driver_id", id)
       .maybeSingle(),
-    supabase
+    db
       .from("wallets")
       .select("balance, reserved, updated_at")
       .eq("user_id", id)
       .maybeSingle(),
-    supabase
+    db
       .from("app_driver_ratings" as never)
       .select("avg_rating, total_feedbacks")
       .eq("driver_id", id)
       .maybeSingle(),
-    supabase
+    db
       .from("wallet_transactions")
       .select("id, type, amount, balance_after, note, order_id, created_at")
       .eq("user_id", id)
       .order("created_at", { ascending: false })
       .limit(30),
-    supabase
+    db
       .from("app_orders" as never)
       .select("id, phone, current_status, final_status, amount, created_at, channel, address")
       .eq("driver_id", id)
       .order("created_at", { ascending: false })
       .limit(10),
-    supabase
+    db
       .from("driver_applications")
       .select("id, status, created_at, city, service, car_reg_number")
       .eq("user_id", id)
@@ -87,6 +88,7 @@ export async function PATCH(
   if (!session.isLoggedIn) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const db = await getTenantClient(session.organizationId);
 
   const { id } = await params;
 
@@ -145,7 +147,7 @@ export async function PATCH(
 
   // ── Apply users update ────────────────────────────────────────────────────
   if (hasUserUpdates) {
-    const { error } = await supabase.from("tax_users").update(userUpdates).eq("id", id);
+    const { error } = await db.from("tax_users").update(userUpdates).eq("id", id);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -153,7 +155,7 @@ export async function PATCH(
 
   // ── Apply driver_applications update ─────────────────────────────────────
   if (hasAppUpdates) {
-    const { error } = await supabase
+    const { error } = await db
       .from("driver_applications")
       .update(appUpdates)
       .eq("id", appId!)

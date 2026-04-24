@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { supabase } from "@/lib/supabase";
+import { getTenantClient } from "@/lib/tenant-client";
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session.isLoggedIn) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const db = await getTenantClient(session.organizationId);
 
   const phone = req.nextUrl.searchParams.get("phone")?.trim();
   if (!phone) {
     return NextResponse.json({ error: "phone is required" }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("tax_users")
     .select("id, telegram_id, first_name, last_name, username, phone, role, total_rides")
     .eq("phone", phone)

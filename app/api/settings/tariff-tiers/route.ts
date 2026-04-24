@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { supabase } from "@/lib/supabase";
+import { getTenantClient } from "@/lib/tenant-client";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getTenantClient(session.organizationId);
 
   const rstId = req.nextUrl.searchParams.get("rst_id");
 
-  let query = supabase
+  let query = db
     .from("tariff_tiers")
     .select("*")
     .order("sort_order", { ascending: true });
@@ -25,6 +26,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getTenantClient(session.organizationId);
 
   const body = await req.json();
   const { rst_id, from_km, to_km, pricing_type, rate, sort_order } = body;
@@ -36,7 +38,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("tariff_tiers")
     .insert({
       rst_id,

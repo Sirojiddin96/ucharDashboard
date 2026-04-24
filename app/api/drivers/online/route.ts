@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { supabase } from "@/lib/supabase";
+import { getTenantClient } from "@/lib/tenant-client";
 
 export async function GET() {
   const session = await getSession();
   if (!session.isLoggedIn) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const db = await getTenantClient(session.organizationId);
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("driver_online_status")
     .select(
       `driver_id, is_online, lat, lon, updated_at,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { getSession } from "@/lib/session";
-import { supabase } from "@/lib/supabase";
+import { getTenantClient } from "@/lib/tenant-client";
 
 interface CreateOrderBody {
   phone: string;
@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
   if (!session.isLoggedIn) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const db = await getTenantClient(session.organizationId);
 
   let body: CreateOrderBody;
   try {
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("orders")
     .insert({
       phone,

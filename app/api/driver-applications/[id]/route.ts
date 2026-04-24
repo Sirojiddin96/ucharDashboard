@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { supabase } from "@/lib/supabase";
+import { getSession } from "@/lib/session";
+import { getTenantClient } from "@/lib/tenant-client";
 
 const ALLOWED_STATUSES = ["approved", "rejected"] as const;
 type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
@@ -25,6 +26,12 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await getSession();
+  if (!session.isLoggedIn) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const db = await getTenantClient(session.organizationId);
+
   const { id } = await params;
 
   if (!id) {
@@ -47,7 +54,7 @@ export async function PATCH(
     );
   }
 
-  const { error } = await supabase
+  const { error } = await db
     .from("driver_applications")
     .update({ status })
     .eq("id", id);
@@ -58,7 +65,7 @@ export async function PATCH(
 
   // On approval: try to set region_id + service_class on the linked user
   if (status === "approved") {
-    const { data: app } = await supabase
+    const { data: app } = await db
       .from("driver_applications")
       .select("user_id, city, service")
       .eq("id", id)
@@ -76,7 +83,7 @@ export async function PATCH(
 
       // Match city name → region (case-insensitive slug/name match)
       if (app.city) {
-        const { data: region } = await supabase
+        const { data: region } = await db
           .from("regions")
           .select("id")
           .or(
@@ -88,7 +95,7 @@ export async function PATCH(
       }
 
       if (Object.keys(userUpdates).length > 0) {
-        await supabase.from("tax_users").update(userUpdates).eq("id", app.user_id);
+        await db.from("tax_users").update(userUpdates).eq("id", app.user_id);
       }
     }
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { getTenantClient } from "@/lib/tenant-client";
 import { getSession } from "@/lib/session";
 import { unstable_cache } from "next/cache";
 
@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
   if (!session.isLoggedIn) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const db = await getTenantClient(session.organizationId);
 
   const page = Math.max(1, parseInt(req.nextUrl.searchParams.get("page") ?? "1", 10));
   const status = req.nextUrl.searchParams.get("status") ?? "";
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
       const from = (page - 1) * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
-      let query = supabase
+      let query = db
         .from("app_orders" as never)
         .select(
           "id, scat_uuid, phone, final_status, current_status, driver_name, car_number, amount, created_at, completed_at, channel, driver_reassignment_count",

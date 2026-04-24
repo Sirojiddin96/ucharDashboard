@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { supabase } from "@/lib/supabase";
+import { getTenantClient } from "@/lib/tenant-client";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +10,7 @@ export async function PATCH(
 ) {
   const session = await getSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getTenantClient(session.organizationId);
 
   const { id } = await params;
   const body = await req.json();
@@ -24,7 +25,7 @@ export async function PATCH(
     if (key in body) updates[key] = body[key];
   }
 
-  const { error } = await supabase.from("service_types").update(updates).eq("id", id);
+  const { error } = await db.from("service_types").update(updates).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
@@ -35,9 +36,10 @@ export async function DELETE(
 ) {
   const session = await getSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getTenantClient(session.organizationId);
 
   const { id } = await params;
-  const { error } = await supabase.from("service_types").delete().eq("id", id);
+  const { error } = await db.from("service_types").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

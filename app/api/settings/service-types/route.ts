@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { supabase } from "@/lib/supabase";
+import { getTenantClient } from "@/lib/tenant-client";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const session = await getSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getTenantClient(session.organizationId);
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("service_types")
     .select("*")
     .order("sort_order", { ascending: true });
@@ -20,6 +21,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getTenantClient(session.organizationId);
 
   const body = await req.json();
   const { name, name_uz, name_ru, service_class, max_passengers, estimated_pickup_minutes, is_active, sort_order } = body;
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "name and service_class are required" }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("service_types")
     .insert({
       name, name_uz: name_uz ?? null, name_ru: name_ru ?? null,

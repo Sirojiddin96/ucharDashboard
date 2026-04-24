@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { supabase } from "@/lib/supabase";
+import { getTenantClient } from "@/lib/tenant-client";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getTenantClient(session.organizationId);
 
   const regionId = req.nextUrl.searchParams.get("region_id");
 
-  let query = supabase
+  let query = db
     .from("region_service_tariffs")
     .select(
       "*, service_types(id, name, name_uz, name_ru, service_class, max_passengers, is_active), tariffs(id, name, per_km, per_min_driving, base_fare, minimum_fare, currency), tariff_tiers(id, from_km, to_km, pricing_type, rate, sort_order)"
@@ -27,6 +28,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getTenantClient(session.organizationId);
 
   const body = await req.json();
   const { region_id, service_type_id, tariff_id, scat_rate_id, is_active, sort_order, display_fare, start_fare, minimum_fare } = body;
@@ -35,7 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "region_id and service_type_id are required" }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("region_service_tariffs")
     .insert({
       region_id,

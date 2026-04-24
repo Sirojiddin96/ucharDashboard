@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { getTenantClient } from "@/lib/tenant-client";
 import { getSession } from "@/lib/session";
 import { NextResponse } from "next/server";
 
@@ -9,8 +9,9 @@ export async function GET() {
   if (!session.isLoggedIn) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const db = await getTenantClient(session.organizationId);
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("orders")
     .select(
       "id, scat_uuid, phone, current_status, driver_name, driver_id, car_number, car_color, car_brand, address, dropoff_address, note, latitude, longitude, dest_latitude, dest_longitude, channel, region_id, service_id, created_at, updated_at, driver_assigned_at, billing_started_at, driver_reassignment_count, amount, distance_m"

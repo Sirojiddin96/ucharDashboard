@@ -7,6 +7,7 @@ const NAV = [
   { href: "/settings/regions",       label: "Regions",       icon: "🗺" },
   { href: "/settings/service-types", label: "Service Types", icon: "🏷" },
   { href: "/settings/tariffs",       label: "Tariffs",       icon: "💰" },
+  { href: "/settings/database",      label: "Database",      icon: "🔌" },
 ];
 
 export default function SettingsNav() {

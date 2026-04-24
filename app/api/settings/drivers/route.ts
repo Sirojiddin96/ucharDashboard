@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { supabase } from "@/lib/supabase";
+import { getTenantClient } from "@/lib/tenant-client";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getTenantClient(session.organizationId);
 
   const regionId = req.nextUrl.searchParams.get("region_id");
   const excludeRegion = req.nextUrl.searchParams.get("exclude_region");
   const q = req.nextUrl.searchParams.get("q");
 
-  let query = (supabase as any)
+  let query = (db as any)
     .from("tax_users")
     .select("id, full_name, phone, service_class, is_active, region_id")
     .eq("role", "driver")

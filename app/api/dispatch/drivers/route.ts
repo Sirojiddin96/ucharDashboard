@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { supabase } from "@/lib/supabase";
+import { getTenantClient } from "@/lib/tenant-client";
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session.isLoggedIn) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const db = await getTenantClient(session.organizationId);
 
   const lat = parseFloat(req.nextUrl.searchParams.get("lat") ?? "");
   const lon = parseFloat(req.nextUrl.searchParams.get("lon") ?? "");
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
 
   // ── Phone/name search mode ────────────────────────────────────────────────
   if (q) {
-    let query = supabase
+    let query = db
       .from("tax_users")
       .select("id, first_name, last_name, phone")
       .eq("role", "driver")
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
 
     // Enrich with online status
     const ids = (data ?? []).map((u) => u.id);
-    const { data: online } = await supabase
+    const { data: online } = await db
       .from("driver_online_status")
       .select("driver_id, is_online, lat, lon, updated_at")
       .in("driver_id", ids);
@@ -62,7 +63,7 @@ export async function GET(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rpcParams: any = { p_lat: lat, p_lon: lon, p_radius_m: 10000, p_region_id: regionId || null };
 
-  const { data: nearby, error: rpcError } = await supabase.rpc(
+  const { data: nearby, error: rpcError } = await db.rpc(
     "find_nearest_online_driver",
     rpcParams
   );
@@ -80,7 +81,7 @@ export async function GET(req: NextRequest) {
     nearby.map((n: { driver_id: string; distance_m: number }) => [n.driver_id, n.distance_m])
   );
 
-  const { data: users, error: usersError } = await supabase
+  const { data: users, error: usersError } = await db
     .from("tax_users")
     .select("id, first_name, last_name, phone")
     .in("id", ids);
@@ -89,7 +90,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: usersError.message }, { status: 500 });
   }
 
-  const { data: online } = await supabase
+  const { data: online } = await db
     .from("driver_online_status")
     .select("driver_id, lat, lon")
     .in("driver_id", ids);

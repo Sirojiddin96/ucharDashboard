@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { supabase } from "@/lib/supabase";
+import { getTenantClient } from "@/lib/tenant-client";
 
 export const dynamic = "force-dynamic";
 
@@ -10,9 +10,10 @@ export async function GET(
 ) {
   const session = await getSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getTenantClient(session.organizationId);
 
   const { id } = await params;
-  const { data, error } = await supabase.from("regions").select("*").eq("id", id).single();
+  const { data, error } = await db.from("regions").select("*").eq("id", id).single();
   if (error || !data) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ region: data });
 }
@@ -23,6 +24,7 @@ export async function PATCH(
 ) {
   const session = await getSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getTenantClient(session.organizationId);
 
   const { id } = await params;
   const body = await req.json();
@@ -34,7 +36,7 @@ export async function PATCH(
   }
   updates.updated_at = new Date().toISOString();
 
-  const { error } = await supabase.from("regions").update(updates).eq("id", id);
+  const { error } = await db.from("regions").update(updates).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
@@ -45,9 +47,10 @@ export async function DELETE(
 ) {
   const session = await getSession();
   if (!session.isLoggedIn) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const db = await getTenantClient(session.organizationId);
 
   const { id } = await params;
-  const { error } = await supabase.from("regions").delete().eq("id", id);
+  const { error } = await db.from("regions").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

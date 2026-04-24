@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { getTenantClient } from "@/lib/tenant-client";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +9,7 @@ export async function GET(request: Request) {
   if (!session.isLoggedIn) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const db = await getTenantClient(session.organizationId);
 
   const { searchParams } = new URL(request.url);
   const days = Math.min(
@@ -20,13 +21,13 @@ export async function GET(request: Request) {
   ).toISOString();
 
   const [{ data: orders }, { data: users }] = await Promise.all([
-    supabase
+    db
       .from("app_orders" as never)
       .select(
         "id, created_at, final_status, amount, channel, driver_id, driver_name, distance_m"
       )
       .gte("created_at", since),
-    supabase
+    db
       .from("tax_users")
       .select("id, created_at, role")
       .gte("created_at", since),
