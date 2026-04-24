@@ -3,6 +3,9 @@ import { cookies } from "next/headers";
 
 export interface SessionData {
   isLoggedIn: boolean;
+  userId: string;
+  organizationId: string;
+  role: "owner" | "admin" | "dispatcher";
 }
 
 export async function getSession() {

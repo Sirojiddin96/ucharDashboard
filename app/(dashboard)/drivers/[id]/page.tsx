@@ -21,7 +21,7 @@ async function getDriverProfile(id: string) {
     { data: application },
   ] = await Promise.all([
     supabase
-      .from("users")
+      .from("tax_users")
       .select(
         "id, first_name, last_name, username, phone, role, source, badge, total_rides, total_amount, total_ride_minutes, created_at, is_deleted"
       )
@@ -76,7 +76,7 @@ async function getDriverProfile(id: string) {
   // Fetch region_id + service_class separately (new columns — not yet in generated types)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const regionRaw = await (supabase as any)
-    .from("users")
+    .from("tax_users")
     .select("region_id, service_class")
     .eq("id", id)
     .single();

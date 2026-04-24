@@ -35,8 +35,8 @@ async function getStats() {
       .from("app_orders" as never)
       .select("*", { count: "exact", head: true })
       .in("final_status", [8, 9]),
-    supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "courier"),
-    supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "driver"),
+    supabase.from("tax_users").select("*", { count: "exact", head: true }).eq("role", "courier"),
+    supabase.from("tax_users").select("*", { count: "exact", head: true }).eq("role", "driver"),
     supabase
       .from("app_orders" as never)
       .select("*", { count: "exact", head: true })

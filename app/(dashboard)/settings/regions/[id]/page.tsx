@@ -59,7 +59,7 @@ export default async function RegionDetailPage({
 
   // Drivers tab data
   const { data: drivers } = await (supabase as any)
-    .from("users")
+    .from("tax_users")
     .select("id, full_name, phone, service_class, is_active")
     .eq("role", "driver")
     .eq("region_id", id)

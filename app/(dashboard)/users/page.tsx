@@ -21,7 +21,7 @@ async function getUsers(page: number) {
   const to = from + PAGE_SIZE - 1;
 
   const { data, count } = await supabase
-    .from("users")
+    .from("tax_users")
     .select("id, telegram_id, username, first_name, last_name, phone, role, total_rides, created_at", {
       count: "exact",
     })
