@@ -1,7 +1,7 @@
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import ServiceTypeList from "./ServiceTypeList";
+import ServiceTypeList, { type ServiceType } from "./ServiceTypeList";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +22,7 @@ export default async function ServiceTypesPage() {
           Global service catalog. Edit here and changes sync instantly to every region that uses this service type.
         </p>
       </div>
-      <ServiceTypeList initialServiceTypes={data ?? []} />
+      <ServiceTypeList initialServiceTypes={(data ?? []) as ServiceType[]} />
     </div>
   );
 }

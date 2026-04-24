@@ -50,7 +50,7 @@ async function getApplications(page: number, status: string) {
   const to = from + PAGE_SIZE - 1;
 
   let query = supabase
-    .from("driver_applications")
+    .from("driver_applications" as never)
     .select(
       "id, created_at, status, first_name, last_name, middle_name, phone, city, service, profile, call_sign, connection_type, car_brand_client, car_color_client, car_reg_number",
       { count: "exact" }

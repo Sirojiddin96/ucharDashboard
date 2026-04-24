@@ -33,7 +33,8 @@ async function getOrder(id: string) {
         )
         .eq("order_id", id)
         .order("assigned_at", { ascending: false }),
-      supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
         .from("driver_offers")
         .select(
           "id, driver_id, status, attempt_number, distance_m, estimated_fare, pickup_address, dropoff_address, offered_at, expires_at, responded_at"

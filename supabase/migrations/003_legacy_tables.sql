@@ -2,6 +2,15 @@
 -- These tables hold read-only snapshots of old data from the legacy project
 -- Each table includes: source='legacy', old_id (original ID), migrated_at timestamp
 
+-- ── Pre-requisite: ensure orders has all columns the views depend on ─────────
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS address       text;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS region_id     uuid;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS service_id    uuid;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS bot_id        text;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS bot_token     text;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS dropoff_address text;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS note          text;
+
 CREATE SCHEMA IF NOT EXISTS legacy_archive;
 
 -- 1. Legacy Orders

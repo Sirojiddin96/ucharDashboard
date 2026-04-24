@@ -98,9 +98,9 @@ export default function DriverMap() {
       const existingIds = new Set(markersRef.current.keys());
 
       for (const driver of drivers) {
-        const { driver_id, lat, lon, users } = driver;
+        const { driver_id, lat, lon, tax_users } = driver;
         const name =
-          [users?.first_name, users?.last_name].filter(Boolean).join(" ") ||
+          [tax_users?.first_name, tax_users?.last_name].filter(Boolean).join(" ") ||
           driver_id.slice(0, 8);
 
         const icon = L.divIcon({
@@ -131,7 +131,7 @@ export default function DriverMap() {
             .bindPopup(`
               <div style="min-width:140px;font-family:sans-serif">
                 <b style="font-size:13px">${name}</b><br/>
-                <span style="color:#6b7280;font-size:11px">${users?.phone ?? driver_id.slice(0, 8)}</span>
+                <span style="color:#6b7280;font-size:11px">${tax_users?.phone ?? driver_id.slice(0, 8)}</span>
               </div>
             `);
           marker.on("click", () => {

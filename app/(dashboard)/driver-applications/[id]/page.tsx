@@ -54,7 +54,8 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 async function getApplication(id: string): Promise<Application | null> {
   const { data } = await supabase
-    .from("driver_applications")
+     
+    .from("driver_applications" as never)
     .select("*")
     .eq("id", id)
     .single();

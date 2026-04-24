@@ -95,7 +95,7 @@ export default async function RegionDetailPage({
         ))}
       </div>
 
-      {tab === "mappings"  && <MappingsTab regionId={id} initialMappings={mappings} allServiceTypes={allServiceTypes ?? []} allTariffs={allTariffs ?? []} />}
+      {tab === "mappings"  && <MappingsTab regionId={id} initialMappings={mappings} allServiceTypes={(allServiceTypes ?? []) as import("../../service-types/ServiceTypeList").ServiceType[]} allTariffs={allTariffs ?? []} />}
       {tab === "addresses" && <AddressesTab regionId={id} initialAddresses={addresses} />}
       {tab === "drivers"   && <DriversTab regionId={id} initialDrivers={drivers ?? []} />}
     </div>

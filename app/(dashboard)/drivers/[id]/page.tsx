@@ -11,6 +11,8 @@ export const dynamic = "force-dynamic";
 // ─── Data fetching ────────────────────────────────────────────────────────────
 
 async function getDriverProfile(id: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any;
   const [
     { data: user },
     { data: onlineStatus },
@@ -27,36 +29,36 @@ async function getDriverProfile(id: string) {
       )
       .eq("id", id)
       .single(),
-    supabase
+    sb
       .from("driver_online_status")
       .select("is_online, lat, lon, updated_at")
       .eq("driver_id", id)
       .maybeSingle(),
-    supabase
+    sb
       .from("wallets")
       .select("balance, reserved, updated_at")
       .eq("user_id", id)
       .maybeSingle(),
-    supabase
-      .from("app_driver_ratings" as never)
+    sb
+      .from("app_driver_ratings")
       .select("avg_rating, total_feedbacks")
       .eq("driver_id", id)
       .maybeSingle(),
-    supabase
+    sb
       .from("wallet_transactions")
       .select("id, type, amount, balance_after, note, order_id, created_at")
       .eq("user_id", id)
       .order("created_at", { ascending: false })
       .limit(30),
-    supabase
-      .from("app_orders" as never)
+    sb
+      .from("app_orders")
       .select(
         "id, phone, current_status, final_status, amount, created_at, channel, address"
       )
       .eq("driver_id", id)
       .order("created_at", { ascending: false })
       .limit(10),
-    supabase
+    sb
       .from("driver_applications")
       .select(
         "id, status, created_at, city, service, car_reg_number, car_brand_dispatcher, car_color_dispatcher, call_sign, connection_type, driver_license"
@@ -67,7 +69,7 @@ async function getDriverProfile(id: string) {
       .maybeSingle(),
   ]);
 
-  const { data: regions } = await supabase
+  const { data: regions } = await sb
     .from("regions")
     .select("id, name")
     .eq("is_active", true)
@@ -285,7 +287,7 @@ export default async function DriverDetailPage({
               last_name: user.last_name,
               username: user.username,
               phone: user.phone,
-              role: user.role,
+              role: user.role ?? "driver",
               region_id: regionId,
               service_class: serviceClass,
             }}
@@ -336,7 +338,7 @@ export default async function DriverDetailPage({
             {(transactions ?? []).length === 0 && (
               <p className="text-xs text-gray-600 py-2">No transactions</p>
             )}
-            {(transactions ?? []).map((tx) => (
+            {(transactions ?? []).map((tx: { id: string; type: string; amount: number | null; balance_after: number | null; note: string | null; order_id: string | null; created_at: string }) => (
               <div
                 key={tx.id}
                 className="flex items-center justify-between py-2 text-xs"
@@ -357,11 +359,11 @@ export default async function DriverDetailPage({
                 <div className="text-right ml-3 shrink-0">
                   <p
                     className={
-                      tx.amount >= 0 ? "text-green-400" : "text-red-400"
+                      (tx.amount ?? 0) >= 0 ? "text-green-400" : "text-red-400"
                     }
                   >
-                    {tx.amount >= 0 ? "+" : ""}
-                    {Number(tx.amount).toLocaleString()}
+                    {(tx.amount ?? 0) >= 0 ? "+" : ""}
+                    {Number(tx.amount ?? 0).toLocaleString()}
                   </p>
                   <p className="text-gray-600">{ts(tx.created_at)}</p>
                 </div>
